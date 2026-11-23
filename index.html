@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>พรายกระซิบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  /* หน้าเลือกแพ็กเกจ / สถานี ของ LINE OA "พรายกระซิบ" — เปิดผ่าน LIFF ในแอป LINE */
+  :root {
+    --green: #06C755; --green-dark: #04A447; --green-soft: #E6F9EE;
+    --ink: #111827; --ink-2: #4B5563; --ink-3: #9CA3AF; --line: #E5E7EB;
+    --bg: #F4F6F5; --card: #FFFFFF; --danger: #DC2626;
+    --A: #0EA5A4; --B: #06C755; --C: #F59E0B; --D: #6366F1;
+    --radius: 18px; --shadow: 0 1px 2px rgba(17,24,39,.04), 0 6px 18px rgba(17,24,39,.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 15px; line-height: 1.5;
+         padding-bottom: calc(110px + env(safe-area-inset-bottom)); min-height: 100vh; }
+  button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+
+  .top { position: sticky; top: 0; z-index: 10; background: linear-gradient(160deg, #07D35B 0%, #04A447 100%);
+         color: #fff; padding: 18px 16px 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .logo { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.18);
+                 display: grid; place-items: center; font-size: 18px; }
+  .brand h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+  .brand p { margin: 0; font-size: 12.5px; opacity: .9; }
+  .tabs { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; background: rgba(0,0,0,.14);
+          border-radius: 12px; padding: 4px; }
+  .tabs button { padding: 9px 0; border-radius: 9px; color: rgba(255,255,255,.85); font-weight: 600; font-size: 14.5px;
+                 transition: background .2s, color .2s; }
+  .tabs button.on { background: #fff; color: var(--green-dark); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+
+  main { padding: 16px; max-width: 560px; margin: 0 auto; }
+  .note { background: var(--card); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow);
+          margin-bottom: 14px; font-size: 14px; color: var(--ink-2); }
+  .note b { color: var(--ink); }
+  .note.gift { background: linear-gradient(135deg, #FFF7E6, #FFFDF7); border: 1px solid #FCE7B5; }
+  .note .rows div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+  .muted { color: var(--ink-3); font-size: 12.5px; }
+
+  /* การ์ดแพ็กเกจ */
+  .pkg { position: relative; display: block; width: 100%; text-align: left; background: var(--card);
+         border-radius: var(--radius); padding: 16px 16px 14px 20px; margin-bottom: 12px; box-shadow: var(--shadow);
+         border: 2px solid transparent; transition: border-color .15s, transform .1s; overflow: hidden; }
+  .pkg:active { transform: scale(.99); }
+  .pkg::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--c); }
+  .pkg.sel { border-color: var(--green); background: #FBFFFC; }
+  .pkg .row1 { display: flex; align-items: flex-start; gap: 12px; }
+  .pkg .name { font-weight: 700; font-size: 16.5px; }
+  .pkg .range { color: var(--ink-2); font-size: 13px; }
+  .pkg .price { margin-left: auto; text-align: right; white-space: nowrap; }
+  .pkg .price b { font-size: 19px; color: var(--ink); }
+  .pkg .price span { display: block; font-size: 11.5px; color: var(--ink-3); }
+  .pkg .chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: #F3F4F6; color: var(--ink-2); }
+  .badge { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; margin-top: 6px; }
+  .badge.on { background: var(--green-soft); color: var(--green-dark); }
+  .badge.trial { background: #FFF4D6; color: #B45309; }
+  .badge.off { background: #F3F4F6; color: var(--ink-3); }
+  .tick { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); flex: none; margin-top: 2px;
+          display: grid; place-items: center; transition: all .15s; }
+  .tick.box { border-radius: 7px; }
+  .sel .tick { background: var(--green); border-color: var(--green); }
+  .sel .tick::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0;
+                      transform: rotate(45deg) translate(-1px, -1px); }
+
+  /* สถานี */
+  .line { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
+  .line-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 18%, transparent); flex: none; }
+  .line-head .t { font-weight: 700; }
+  .line-head .s { font-size: 12.5px; color: var(--ink-3); }
+  .all { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--green-dark); padding: 6px 10px;
+         border-radius: 999px; background: var(--green-soft); white-space: nowrap; }
+  .st { position: relative; display: flex; align-items: center; width: 100%; text-align: left;
+        padding: 11px 16px 11px 44px; min-height: 48px; }
+  .st::before { content: ''; position: absolute; left: 21px; top: 0; bottom: 0; width: 4px; background: var(--c); opacity: .25; }
+  .st:first-child::before { top: 50%; } .st:last-child::before { bottom: 50%; }
+  .st::after { content: ''; position: absolute; left: 15px; top: 50%; width: 16px; height: 16px; margin-top: -8px;
+               border-radius: 50%; background: #fff; border: 3px solid color-mix(in srgb, var(--c) 45%, #fff); transition: all .15s; }
+  .st.on::after { background: var(--c); border-color: var(--c); }
+  .st + .st { border-top: 1px solid #F3F4F6; }
+  .st .nm { font-weight: 500; }
+  .st .cd { font-size: 11.5px; color: var(--ink-3); margin-left: 6px; }
+  .sw { margin-left: auto; width: 46px; height: 28px; border-radius: 999px; background: #D1D5DB; position: relative; transition: background .2s; flex: none; }
+  .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff;
+               box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  .st.on .sw { background: var(--green); }
+  .st.on .sw::after { transform: translateX(18px); }
+  .line.locked { opacity: .65; }
+  .line.locked .lock { padding: 12px 16px 14px; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+  .line.locked .lock button { margin-left: auto; color: var(--green-dark); font-weight: 600; font-size: 13px; }
+
+  .empty { text-align: center; padding: 40px 20px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .empty .big { font-size: 40px; }
+
+  /* แถบล่าง */
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(255,255,255,.96);
+         backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .bar .in { max-width: 560px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .bar .sum { font-size: 12.5px; color: var(--ink-2); line-height: 1.3; }
+  .bar .sum b { display: block; font-size: 18px; color: var(--ink); }
+  .cta { flex: 1; padding: 14px 16px; border-radius: 14px; background: var(--green); color: #fff; font-weight: 700; font-size: 16px;
+         box-shadow: 0 6px 16px rgba(6,199,85,.28); transition: opacity .15s, transform .1s; }
+  .cta:active { transform: scale(.98); }
+  .cta:disabled { background: #C7CDD3; box-shadow: none; cursor: default; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px);
+           background: #111827; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; opacity: 0;
+           transition: all .25s; z-index: 30; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .skel { height: 96px; border-radius: var(--radius); margin-bottom: 12px;
+          background: linear-gradient(90deg, #ECEFED 25%, #F6F8F7 50%, #ECEFED 75%); background-size: 200% 100%; animation: sh 1.2s infinite; }
+  @keyframes sh { to { background-position: -200% 0; } }
+  .hide { display: none !important; }
+
+  /* ยอมรับ PDPA */
+  .consent { display: flex; gap: 12px; align-items: flex-start; background: var(--card); border-radius: var(--radius);
+             padding: 14px 16px; box-shadow: var(--shadow); margin-bottom: 14px; border: 2px solid transparent; text-align: left; width: 100%; }
+  .consent.need { border-color: #FCD34D; background: #FFFCF2; }
+  .consent.ok { border-color: var(--green); background: #FBFFFC; }
+  .consent .tick { border-radius: 7px; }
+  .consent.ok .tick { background: var(--green); border-color: var(--green); }
+  .consent.ok .tick::after { content: ''; width: 6px; height: 11px; border: solid #fff; border-width: 0 2.5px 2.5px 0;
+                             transform: rotate(45deg) translate(-1px, -1px); }
+  .consent .txt { font-size: 14px; color: var(--ink-2); }
+  .consent .txt b { color: var(--ink); }
+  .link { color: var(--green-dark); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* อายุงาน */
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .opt { padding: 8px 14px; border-radius: 999px; background: #F3F4F6; color: var(--ink-2); font-weight: 500; font-size: 14px;
+         border: 1.5px solid transparent; }
+  .opt.on { background: var(--green-soft); color: var(--green-dark); border-color: var(--green); }
+  .other { display: flex; gap: 8px; margin-top: 10px; }
+  .other input { flex: 1; font: inherit; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); outline: none; }
+  .other input:focus { border-color: var(--green); }
+  .mini { padding: 10px 14px; border-radius: 12px; background: var(--green); color: #fff; font-weight: 600; font-size: 14px; }
+  .mini:disabled { background: #C7CDD3; }
+
+  /* ประกาศความเป็นส่วนตัว (เต็มจอ) */
+  .sheet { position: fixed; inset: 0; z-index: 50; background: rgba(17,24,39,.45); display: flex; align-items: flex-end; }
+  .sheet .box { background: #fff; width: 100%; max-height: 92vh; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; }
+  .sheet header { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .sheet header h2 { font-size: 17px; margin: 0; }
+  .sheet header button { margin-left: auto; font-size: 22px; color: var(--ink-3); width: 36px; height: 36px; border-radius: 50%; background: #F3F4F6; }
+  .sheet .body { overflow-y: auto; padding: 6px 18px 18px; font-size: 14px; color: var(--ink-2); -webkit-overflow-scrolling: touch; }
+  .sheet h3 { font-size: 15px; color: var(--ink); margin: 18px 0 6px; }
+  .sheet ul { padding-left: 20px; margin: 6px 0; } .sheet li { margin: 4px 0; }
+  .sheet .foot { padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">🏠</div>
+    <div><h1>พรายกระซิบ</h1><p id="hello">ห้องเช่าจากเจ้าของโดยตรง ตามสถานี BTS</p></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button id="tab-pkg" role="tab" onclick="go('pkg')">แพ็กเกจ</button>
+    <button id="tab-st" role="tab" onclick="go('st')">เลือกสถานี</button>
+  </nav>
+</header>
+
+<main id="main">
+  <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+</main>
+
+<div class="bar hide" id="bar"><div class="in" id="barIn"></div></div>
+<div class="toast" id="toast"></div>
+
+<!-- ประกาศความเป็นส่วนตัว (PDPA) — แก้ข้อความแล้วต้องเปลี่ยน PDPA_VERSION ใน line_members.gs ด้วย ลูกค้าจะถูกขอให้ติ๊กใหม่ -->
+<div class="sheet hide" id="policy" onclick="if (event.target === this) closePolicy()">
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
+    <header><h2 id="policyTitle">ประกาศความเป็นส่วนตัว</h2><button onclick="closePolicy()" aria-label="ปิด">×</button></header>
+    <div class="body">
+      <p class="muted">ฉบับวันที่ 23 พฤศจิกายน 2569 · ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+      <p>"พรายกระซิบ" (เรียกว่า "เรา") ให้บริการแจ้งเตือนห้องเช่าที่เจ้าของโพสต์เอง ตามสถานี BTS ที่คุณเลือก ผ่าน LINE Official Account
+         ประกาศนี้อธิบายว่าเราเก็บข้อมูลอะไรของคุณ เก็บไปทำอะไร เก็บนานแค่ไหน ใครเข้าถึงได้ และคุณมีสิทธิ์อะไรบ้าง</p>
+
+      <h3>1. ผู้ควบคุมข้อมูลส่วนบุคคล</h3>
+      <p>พรายกระซิบ เป็นผู้ควบคุมข้อมูลส่วนบุคคลของคุณ ติดต่อได้ทางแชต LINE Official Account "พรายกระซิบ" (ช่องทางเดียวกับที่คุณเปิดหน้านี้)</p>
+
+      <h3>2. ข้อมูลที่เราเก็บ</h3>
+      <ul>
+        <li><b>ข้อมูลบัญชี LINE:</b> รหัสผู้ใช้ LINE (User ID) และชื่อที่แสดงใน LINE</li>
+        <li><b>ข้อมูลการใช้บริการ:</b> วันที่เพิ่มเพื่อน / เริ่มใช้ แพ็กเกจที่ทดลองหรือชำระเงิน วันหมดอายุ สถานีที่เลือก สถานะสมาชิก และประวัติการแจ้งเตือนต่ออายุ</li>
+        <li><b>อายุการทำงานเป็นเอเจนต์</b> (ไม่บังคับ) — ถ้าคุณเลือกหรือพิมพ์ให้</li>
+        <li><b>ข้อมูลการชำระเงิน:</b> รูปสลิปโอนเงิน ยอดเงิน วันเวลา เลขอ้างอิงรายการ และข้อมูลที่ปรากฏบนสลิป เช่น ชื่อผู้โอน ธนาคาร และเลขบัญชีบางส่วน</li>
+        <li><b>ข้อความที่คุณส่งหาแอดมิน</b> ในแชต LINE Official Account</li>
+        <li><b>บันทึกการยอมรับประกาศนี้:</b> ฉบับที่ยอมรับ และวันเวลาที่กดยอมรับ</li>
+      </ul>
+      <p><b>เราไม่เก็บ:</b> เบอร์โทรศัพท์ เลขบัตรประชาชน ที่อยู่ ตำแหน่งที่ตั้ง รูปโปรไฟล์ รายชื่อเพื่อน หรือรหัสผ่านใดๆ ของคุณ</p>
+
+      <h3>3. เราใช้ข้อมูลเพื่ออะไร และฐานทางกฎหมาย</h3>
+      <ul>
+        <li><b>ให้บริการตามที่คุณสมัคร</b> — ส่งสรุปห้องตามสถานีที่เลือก จัดการช่วงทดลองและแพ็กเกจ ตอบคำถาม
+            <span class="muted">(ฐาน: จำเป็นเพื่อปฏิบัติตามสัญญา)</span></li>
+        <li><b>ตรวจสอบการชำระเงิน</b> — ยืนยันยอด ป้องกันสลิปปลอมหรือสลิปซ้ำ
+            <span class="muted">(ฐาน: สัญญา และประโยชน์โดยชอบด้วยกฎหมาย)</span></li>
+        <li><b>แจ้งเตือนเกี่ยวกับบัญชีของคุณ</b> — เช่น ใกล้หมดอายุ หมดอายุแล้ว ต่ออายุสำเร็จ
+            <span class="muted">(ฐาน: สัญญา)</span></li>
+        <li><b>ปรับปรุงบริการและออกแบบโปรโมชัน</b> ให้เหมาะกับทั้งคนที่เพิ่งเริ่มและคนที่ทำมานาน (ใช้อายุงาน ถ้าคุณให้ไว้)
+            <span class="muted">(ฐาน: ประโยชน์โดยชอบด้วยกฎหมาย และความยินยอมของคุณ)</span></li>
+        <li><b>ปฏิบัติตามกฎหมาย</b> — เช่น การเก็บหลักฐานทางบัญชีและภาษี หรือเมื่อหน่วยงานรัฐร้องขอตามกฎหมาย
+            <span class="muted">(ฐาน: หน้าที่ตามกฎหมาย)</span></li>
+      </ul>
+      <p>เราจะไม่นำข้อมูลของคุณไปใช้นอกเหนือจากวัตถุประสงค์ข้างต้น หากจะใช้เพื่อวัตถุประสงค์ใหม่ เราจะแจ้งและขอความยินยอมก่อน</p>
+
+      <h3>4. ใครเข้าถึงหรือได้รับข้อมูลของคุณ</h3>
+      <ul>
+        <li>แอดมินของพรายกระซิบ เท่าที่จำเป็นต่อการให้บริการ</li>
+        <li><b>LY Corporation (LINE)</b> — ส่งข้อความ ยืนยันตัวตนเมื่อคุณเปิดหน้านี้</li>
+        <li><b>Google</b> (Google Sheets / Apps Script) — ระบบเก็บข้อมูลสมาชิกและประมวลผลคำสั่ง</li>
+        <li><b>SlipOK</b> — บริการตรวจสอบสลิปอัตโนมัติ (ได้รับรูปสลิปและยอดเงินเพื่อตรวจสอบเท่านั้น)</li>
+        <li><b>GitHub</b> — ที่วางหน้าเว็บนี้ (ไม่ได้รับข้อมูลสมาชิกของคุณ)</li>
+        <li>หน่วยงานของรัฐ เมื่อมีกฎหมายหรือคำสั่งที่ชอบด้วยกฎหมายกำหนด</li>
+      </ul>
+      <p><b>เราไม่ขาย ไม่ให้เช่า ไม่แลกเปลี่ยน</b> และไม่ส่งต่อข้อมูลของคุณให้ใครเพื่อการโฆษณาหรือการตลาด</p>
+
+      <h3>5. การส่งข้อมูลไปต่างประเทศ</h3>
+      <p>ผู้ให้บริการระบบข้างต้น (เช่น Google และ LINE) อาจเก็บหรือประมวลผลข้อมูลบนเซิร์ฟเวอร์นอกประเทศไทย
+         ซึ่งผู้ให้บริการเหล่านี้มีมาตรการคุ้มครองข้อมูลตามมาตรฐานสากล</p>
+
+      <h3>6. เราเก็บข้อมูลนานแค่ไหน</h3>
+      <ul>
+        <li>ข้อมูลสมาชิก: ตลอดระยะเวลาที่คุณใช้บริการ และต่อไปไม่เกิน <b>1 ปี</b> นับจากวันที่ใช้บริการครั้งสุดท้าย หรือวันที่คุณบล็อก LINE Official Account</li>
+        <li>หลักฐานการชำระเงิน: ตามระยะเวลาที่กฎหมายบัญชีและภาษีกำหนด</li>
+        <li>เมื่อครบกำหนด เราจะลบ ทำลาย หรือทำให้ข้อมูลไม่สามารถระบุตัวคุณได้</li>
+      </ul>
+
+      <h3>7. สิทธิ์ของคุณ</h3>
+      <p>ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล คุณมีสิทธิ์:</p>
+      <ul>
+        <li>ขอเข้าถึงและขอรับสำเนาข้อมูลของคุณ</li>
+        <li>ขอให้แก้ไขข้อมูลให้ถูกต้องและเป็นปัจจุบัน</li>
+        <li>ขอให้ลบ ทำลาย หรือทำให้ข้อมูลไม่สามารถระบุตัวตนได้</li>
+        <li>ขอให้ระงับการใช้ข้อมูลชั่วคราว</li>
+        <li>คัดค้านการใช้ข้อมูล</li>
+        <li>ขอให้โอนย้ายข้อมูลไปยังที่อื่น</li>
+        <li>ถอนความยินยอมเมื่อใดก็ได้ (ไม่กระทบสิ่งที่ทำไปแล้วก่อนถอน)</li>
+        <li>ร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (สคส.) www.pdpc.or.th</li>
+      </ul>
+      <p>ใช้สิทธิ์ได้โดยพิมพ์แจ้งในแชต LINE Official Account "พรายกระซิบ" เราจะตอบภายใน <b>30 วัน</b> ไม่มีค่าใช้จ่าย
+         หมายเหตุ: หากขอให้ลบข้อมูลหรือถอนความยินยอม เราอาจให้บริการต่อไม่ได้ เพราะต้องใช้ข้อมูลเหล่านี้ในการส่งห้องให้คุณ</p>
+
+      <h3>8. ความปลอดภัยของข้อมูล</h3>
+      <ul>
+        <li>จำกัดสิทธิ์การเข้าถึงข้อมูลเฉพาะแอดมิน</li>
+        <li>ยืนยันตัวตนกับ LINE ทุกครั้งที่คุณบันทึกข้อมูลในหน้านี้ คนอื่นแก้ไขข้อมูลแทนคุณไม่ได้</li>
+        <li>ส่งข้อมูลผ่านการเชื่อมต่อแบบเข้ารหัส (HTTPS) และเก็บรหัสลับของระบบแยกจากตัวโปรแกรม</li>
+      </ul>
+      <p>หากเกิดเหตุละเมิดข้อมูลที่มีความเสี่ยงต่อสิทธิ์ของคุณ เราจะแจ้ง สคส. และแจ้งคุณตามที่กฎหมายกำหนด</p>
+
+      <h3>9. ผู้เยาว์</h3>
+      <p>บริการนี้สำหรับผู้ที่บรรลุนิติภาวะแล้ว หากคุณอายุต่ำกว่า 20 ปี กรุณาให้ผู้ปกครองให้ความยินยอมก่อนใช้บริการ</p>
+
+      <h3>10. การเปลี่ยนแปลงประกาศนี้</h3>
+      <p>หากมีการเปลี่ยนแปลงสาระสำคัญ เราจะแจ้งผ่านแชต LINE หรือหน้านี้ และขอให้คุณยืนยันใหม่ก่อนใช้งานต่อ</p>
+
+      <h3>11. ติดต่อเรา</h3>
+      <p>แชต LINE Official Account "พรายกระซิบ" — พิมพ์คำว่า "ข้อมูลส่วนตัว" ตามด้วยเรื่องที่ต้องการ</p>
+    </div>
+    <div class="foot"><button class="cta" style="width:100%" onclick="acceptPolicy()">อ่านแล้ว ยอมรับ</button></div>
+  </div>
+</div>
+
+<script>
+// ===== ตั้งค่า =====
+const CONFIG = {
+  LIFF_ID: '2012764558-CiTuPqwy',   // จาก LINE Developers → channel "พรายกระซิบ หน้าเว็บ" → LIFF
+  API_URL: 'https://script.google.com/macros/s/AKfycbxEfd1IpgEx5Bwvlx7awVF9TVAYN6V59w61wFpuaJmvYfjHfO66hAX9QwS2fusVdBxs/exec',   // Web app URL ของ Apps Script (…/exec) — ไม่ใช่ค่าลับ ทุกคำขอต้องมี idToken จาก LINE
+};
+
+let S = null;          // สถานะจากเซิร์ฟเวอร์
+let view = 'pkg';
+let pick = [];         // แพ็กที่เลือก (ทดลอง = 1 อัน / จ่าย = หลายอัน)
+let picked = new Set(); // สถานีที่ติ๊กอยู่ (ยังไม่บันทึก)
+let busy = false;
+let agree = false;     // ติ๊กยอมรับประกาศความเป็นส่วนตัวในหน้านี้แล้ว (ยังไม่บันทึก)
+let expPick = '';      // อายุงานที่เลือก / พิมพ์
+let expOther = false;  // เปิดช่องพิมพ์เอง
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function toast(msg, ms = 2200) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+async function api(action, extra) {
+  const res = await fetch(CONFIG.API_URL, {   // text/plain = ไม่ต้องขออนุญาต CORS ล่วงหน้า
+    method: 'POST', body: JSON.stringify(Object.assign({ type: 'liff', idToken: liff.getIDToken(), action,
+                                                         consent: !!(S && S.consent) || agree }, extra || {})),
+  });
+  return res.json();
+}
+
+// ===== PDPA =====
+const canSave = () => S.consent || agree;
+function openPolicy() { $('policy').classList.remove('hide'); document.body.style.overflow = 'hidden'; }
+function closePolicy() { $('policy').classList.add('hide'); document.body.style.overflow = ''; }
+function acceptPolicy() { agree = true; closePolicy(); render(); }
+function toggleAgree() { agree = !agree; render(); }
+function consentBlock() {
+  if (S.consent) return `<p class="muted" style="text-align:center;margin:4px 0 14px">✓ ยอมรับประกาศความเป็นส่วนตัวแล้ว · <a class="link" onclick="openPolicy()">อ่านอีกครั้ง</a></p>`;
+  return `<button class="consent ${agree ? 'ok' : 'need'}" onclick="toggleAgree()" aria-pressed="${agree}">
+      <span class="tick"></span>
+      <span class="txt"><b>ฉันได้อ่านและยอมรับ ประกาศความเป็นส่วนตัว (PDPA)</b><br>
+        เราเก็บชื่อ LINE, แพ็กและสถานีที่เลือก, อายุงาน (ถ้ากรอก) และสลิปโอนเงิน เพื่อให้บริการเท่านั้น ไม่ขาย ไม่ส่งต่อ
+        เก็บไม่เกิน 1 ปีหลังเลิกใช้ ขอดู แก้ หรือลบได้ทุกเมื่อ<br>
+        <a class="link" onclick="event.stopPropagation(); openPolicy()">อ่านฉบับเต็ม</a></span>
+    </button>`;
+}
+
+// ===== อายุงาน =====
+function expBlock(saveNow) {
+  const opts = S.expOptions || [];
+  const cur = expPick || S.exp || '';
+  const isOther = expOther || (cur && !opts.includes(cur));
+  const changed = saveNow && cur && cur !== S.exp;
+  return `<div class="note"><b>คุณเป็นเอเจนต์มากี่ปีแล้ว?</b> <span class="muted">(ไม่บังคับ)</span>
+    <div class="muted">มีโปรโมชันแยกให้ทั้งคนที่เพิ่งเริ่มและคนที่ทำมานาน บอกไว้จะได้ไม่พลาดโปรที่เหมาะกับคุณ</div>
+    <div class="opts">${opts.map(o => `<button class="opt ${cur === o && !isOther ? 'on' : ''}" onclick="pickExp('${esc(o)}')">${esc(o)}</button>`).join('')}
+      <button class="opt ${isOther ? 'on' : ''}" onclick="otherExp()">อื่นๆ พิมพ์เอง</button></div>
+    ${isOther ? `<div class="other"><input id="expIn" maxlength="30" placeholder="เช่น 8 เดือน, 10 ปี" value="${esc(isOther ? cur : '')}"
+                   oninput="expPick = this.value.trim(); ${saveNow ? 'refreshExpBtn()' : ''}"></div>` : ''}
+    ${saveNow ? `<div style="margin-top:10px;text-align:right"><button class="mini" id="expBtn" onclick="saveExp()" ${changed && canSave() ? '' : 'disabled'}>${S.exp && !changed ? 'บันทึกแล้ว ✓' : 'บันทึกอายุงาน'}</button></div>` : ''}
+  </div>`;
+}
+function pickExp(o) { expOther = false; expPick = expPick === o ? '' : o; render(); }
+function otherExp() { expOther = true; if ((S.expOptions || []).includes(expPick)) expPick = ''; render(); setTimeout(() => $('expIn') && $('expIn').focus(), 50); }
+function refreshExpBtn() { const b = $('expBtn'); if (b) { b.disabled = !(expPick && expPick !== S.exp && canSave()); b.textContent = 'บันทึกอายุงาน'; } }
+function saveExp() {
+  run(async () => {
+    const r = await api('exp', { exp: expPick });
+    if (r.state) { S = r.state; expPick = ''; expOther = false; }
+    toast(r.ok ? 'บันทึกอายุงานแล้ว ✅' : 'บันทึกไม่ได้ ลองใหม่');
+    render();
+  });
+}
+
+// ส่งข้อความในแชตแทนลูกค้า → บอทตอบกลับ (ฟรี) แล้วปิดหน้า
+async function sayAndClose(text, fallback) {
+  try {
+    if (liff.isInClient() && liff.getContext() && liff.getContext().type !== 'none') {
+      await liff.sendMessages([{ type: 'text', text }]);
+      liff.closeWindow();
+      return;
+    }
+  } catch (e) { console.warn(e); }
+  toast(fallback, 6000);
+}
+
+const isNew = () => !S.trialUsed && !Object.keys(S.paid).length;
+const stationsOf = k => S.stationList.filter(s => s.p === k);
+
+function pkgStatus(k) {
+  const p = S.paid[k];
+  if (p && p.active) return `<span class="badge on">ใช้อยู่ · ถึง ${esc(p.until)}</span>`;
+  if (S.trial && S.trial.pkg === k && S.trial.active) return `<span class="badge trial">ทดลองฟรี · เหลือ ${S.trial.daysLeft} วัน</span>`;
+  if (p || (S.trial && S.trial.pkg === k)) return `<span class="badge off">หมดอายุ</span>`;
+  return '';
+}
+
+function renderPkg() {
+  const trialMode = isNew();
+  let h = '';
+  if (trialMode) {
+    h += `<div class="note gift">🎁 <b>ทดลองฟรี 7 วัน</b><br>เลือกได้ 1 สาย ระบบติ๊กทุกสถานีในสายให้ เอาออกทีหลังได้</div>`;
+  } else {
+    const lines = [];
+    if (S.trial) lines.push(`<div><span>ทดลอง ${esc(S.packages[S.trial.pkg].name)}</span><span>${S.trial.active ? 'ถึง ' + esc(S.trial.until) : 'หมดแล้ว'}</span></div>`);
+    Object.keys(S.paid).sort().forEach(k => lines.push(`<div><span>${esc(S.packages[k].name)}</span><span>${S.paid[k].active ? 'ถึง ' + esc(S.paid[k].until) : 'หมดอายุ'}</span></div>`));
+    h += `<div class="note"><b>จ่ายค่าบริการ (ต่อ 30 วัน)</b><div class="muted">เลือกได้หลายสาย จ่ายรวมทีเดียว · แพ็กที่ใช้อยู่ จะต่อจากวันหมดเดิม</div>
+          ${lines.length ? '<div class="rows" style="margin-top:8px">' + lines.join('') + '</div>' : ''}</div>`;
+  }
+  Object.keys(S.packages).forEach(k => {
+    const P = S.packages[k], st = stationsOf(k), on = pick.includes(k);
+    const chips = st.slice(0, 5).map(s => `<span class="chip">${esc(s.n)}</span>`).join('') +
+                  (st.length > 5 ? `<span class="chip">+${st.length - 5}</span>` : '');
+    h += `<button class="pkg ${on ? 'sel' : ''}" style="--c:var(--${k})" onclick="togglePkg('${k}')">
+      <div class="row1">
+        <span class="tick ${trialMode ? '' : 'box'}"></span>
+        <div><div class="name">${esc(P.name)}</div><div class="range">${esc(P.range)}</div>${trialMode ? '' : pkgStatus(k)}</div>
+        <div class="price">${trialMode ? '<b>ฟรี</b><span>7 วัน · ต่อไป ฿' + P.price + '/ด.</span>' : '<b>฿' + P.price + '</b><span>/ 30 วัน</span>'}</div>
+      </div>
+      <div class="chips">${chips}</div>
+    </button>`;
+  });
+  h += expBlock(!trialMode) + consentBlock();
+  $('main').innerHTML = h;
+
+  const total = pick.reduce((s, k) => s + S.packages[k].price, 0);
+  const ready = pick.length && canSave();
+  $('barIn').innerHTML = trialMode
+    ? `<button class="cta" onclick="startTrial()" ${ready ? '' : 'disabled'}>${!pick.length ? 'เลือก 1 สายเพื่อเริ่มทดลอง'
+        : !canSave() ? 'ติ๊กยอมรับ PDPA ด้านล่างก่อน' : 'เริ่มทดลองฟรี · ' + esc(S.packages[pick[0]].name)}</button>`
+    : `<div class="sum">ยอดรวม<b>฿${total.toLocaleString()}</b></div>
+       <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊กยอมรับ PDPA ก่อน' : 'ยืนยัน · ดูวิธีโอน'}</button>`;
+}
+
+function renderSt() {
+  const act = S.active;
+  let h = '';
+  if (!act.length) {
+    h = `<div class="empty"><div class="big">🚉</div><p><b>ยังไม่มีแพ็กที่ใช้งานอยู่</b><br><span class="muted">เลือกแพ็กก่อน แล้วค่อยกลับมาเลือกสถานี</span></p>
+         <button class="cta" style="max-width:260px" onclick="go('pkg')">ไปเลือกแพ็กเกจ</button></div>`;
+    $('main').innerHTML = h; $('bar').classList.add('hide'); return;
+  }
+  if (!S.consent) h += consentBlock();
+  h += `<div class="note">ติ๊กสถานีที่อยากได้ห้อง · บอทส่งสรุปวันละ 5 รอบ (9 · 12 · 15 · 18 · 21 น.)</div>`;
+  const order = Object.keys(S.packages).sort((a, b) => (act.includes(b) - act.includes(a)));
+  order.forEach(k => {
+    const P = S.packages[k], st = stationsOf(k);
+    if (!act.includes(k)) {
+      h += `<section class="line locked" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
+            <div><div class="t">${esc(P.name)}</div><div class="s">${esc(P.range)}</div></div></div>
+            <div class="lock">🔒 ยังไม่ได้ใช้สายนี้ <button onclick="go('pkg')">สมัคร ฿${P.price}</button></div></section>`;
+      return;
+    }
+    const n = st.filter(s => picked.has(s.c)).length, all = n === st.length;
+    h += `<section class="line" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
+          <div><div class="t">${esc(P.name)}</div><div class="s">เลือกอยู่ ${n}/${st.length} สถานี</div></div>
+          <button class="all" onclick="allOf('${k}', ${!all})">${all ? 'ล้างทั้งสาย' : 'เลือกทั้งสาย'}</button></div>
+          ${st.map(s => `<button class="st ${picked.has(s.c) ? 'on' : ''}" onclick="togSt('${s.c}')" aria-pressed="${picked.has(s.c)}">
+              <span class="nm">${esc(s.n)}</span><span class="cd">${esc(s.c)}</span><span class="sw"></span></button>`).join('')}
+          </section>`;
+  });
+  $('main').innerHTML = h;
+  const saved = new Set(S.stations.filter(c => { const s = S.stationList.find(x => x.c === c); return s && act.includes(s.p); }));
+  const changed = saved.size !== picked.size || [...picked].some(c => !saved.has(c));
+  $('barIn').innerHTML = `<div class="sum">เลือกไว้<b>${picked.size} สถานี</b></div>
+    <button class="cta" onclick="saveSt()" ${changed && canSave() ? '' : 'disabled'}>${!changed ? 'บันทึกแล้ว ✓' : canSave() ? 'บันทึก' : 'ติ๊กยอมรับ PDPA ด้านบนก่อน'}</button>`;
+}
+
+function render() {
+  $('tab-pkg').classList.toggle('on', view === 'pkg');
+  $('tab-st').classList.toggle('on', view === 'st');
+  $('bar').classList.remove('hide');
+  view === 'pkg' ? renderPkg() : renderSt();
+}
+function go(v) { view = v; render(); window.scrollTo(0, 0); }
+
+function resetFromState() {
+  const act = S.active;
+  picked = new Set(S.stations.filter(c => { const s = S.stationList.find(x => x.c === c); return s && act.includes(s.p); }));
+  if (isNew()) pick = [];
+  else pick = S.cart.length ? S.cart.slice() : Object.keys(S.paid).length ? Object.keys(S.paid).sort() : (S.trial ? [S.trial.pkg] : []);
+}
+
+function togglePkg(k) {
+  if (isNew()) pick = pick[0] === k ? [] : [k];
+  else pick = pick.includes(k) ? pick.filter(x => x !== k) : [...pick, k].sort();
+  renderPkg();
+}
+function togSt(c) { picked.has(c) ? picked.delete(c) : picked.add(c); renderSt(); }
+function allOf(k, on) { stationsOf(k).forEach(s => on ? picked.add(s.c) : picked.delete(s.c)); renderSt(); }
+
+async function run(fn) {
+  if (busy) return; busy = true;
+  document.querySelectorAll('.cta').forEach(b => { b.disabled = true; b.dataset.t = b.textContent; b.textContent = 'กำลังบันทึก…'; });
+  try { await fn(); } catch (e) { console.error(e); toast('เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'); render(); }
+  busy = false;
+}
+
+function startTrial() {
+  run(async () => {
+    const r = await api('trial', { pkg: pick[0], exp: expPick });
+    if (r.state) { S = r.state; resetFromState(); }
+    if (!r.ok) { toast(r.error === 'trial_used' ? 'คุณใช้สิทธิ์ทดลองไปแล้ว' : 'ทำรายการไม่ได้ ลองใหม่'); render(); return; }
+    toast('เริ่มทดลองแล้ว ✅');
+    await sayAndClose('เริ่มทดลองแล้ว', 'เริ่มทดลองแล้ว ✅ กลับไปที่แชตได้เลย');
+    go('st');
+  });
+}
+function confirmPay() {
+  run(async () => {
+    const r = await api('cart', { pkgs: pick });
+    if (r.state) S = r.state;
+    if (!r.ok) { toast('ทำรายการไม่ได้ ลองใหม่'); render(); return; }
+    const total = pick.reduce((s, k) => s + S.packages[k].price, 0);
+    await sayAndClose('ยืนยันจ่าย ' + total + ' บาท', 'กลับไปที่แชต แล้วพิมพ์ "ยืนยันจ่าย" เพื่อดูเลขบัญชี');
+    render();
+  });
+}
+function saveSt() {
+  run(async () => {
+    const r = await api('stations', { codes: [...picked] });
+    if (r.state) { S = r.state; resetFromState(); }
+    toast(r.ok ? 'บันทึกแล้ว ✅ รอบถัดไปได้ห้องตามนี้' : 'บันทึกไม่ได้ ลองใหม่');
+    render();
+  });
+}
+
+function fail(msg) {
+  $('main').innerHTML = `<div class="empty"><div class="big">⚠️</div><p>${msg}</p></div>`;
+  $('bar').classList.add('hide');
+}
+
+(async function start() {
+  const q = new URLSearchParams(location.search);
+  view = q.get('tab') === 'stations' ? 'st' : 'pkg';
+  $('tab-pkg').classList.toggle('on', view === 'pkg'); $('tab-st').classList.toggle('on', view === 'st');
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    const r = await api('state');
+    if (!r.ok) return fail(r.error === 'auth' ? 'ยืนยันตัวตนไม่ได้<br><span class="muted">กรุณาเปิดจากเมนูในแชต LINE พรายกระซิบ</span>' : 'โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง');
+    S = r.state; resetFromState();
+    if (S.name) $('hello').textContent = 'สวัสดีคุณ ' + S.name;
+    if (view === 'st' && !S.active.length) view = 'pkg';
+    render();
+  } catch (e) {
+    console.error(e);
+    fail('เปิดหน้าไม่ได้<br><span class="muted">กรุณาเปิดจากเมนูในแชต LINE พรายกระซิบ</span>');
+  }
+})();
+</script>
+</body>
+</html>
