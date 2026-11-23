@@ -524,12 +524,20 @@ function fail(msg) {
   $('bar').classList.add('hide');
 }
 
-(async function start() {
+// แท็บที่จะเปิด: ?tab=stations หรือ ?tab=packages — ตอนเปิดครั้งแรก LINE ห่อไว้ใน ?liff.state=%3Ftab%3D...
+function wantedTab() {
   const q = new URLSearchParams(location.search);
-  view = q.get('tab') === 'stations' ? 'st' : 'pkg';
+  let t = q.get('tab');
+  if (!t && q.get('liff.state')) { try { t = new URLSearchParams(q.get('liff.state').replace(/^[^?]*\?/, '')).get('tab'); } catch (e) {} }
+  return t === 'stations' ? 'st' : 'pkg';
+}
+
+(async function start() {
+  view = wantedTab();
   $('tab-pkg').classList.toggle('on', view === 'pkg'); $('tab-st').classList.toggle('on', view === 'st');
   try {
     await liff.init({ liffId: CONFIG.LIFF_ID });
+    view = wantedTab();   // หลัง init LINE เปลี่ยน URL กลับเป็น ?tab=... แล้ว
     if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
     const r = await api('state');
     if (!r.ok) return fail(r.error === 'auth' ? 'ยืนยันตัวตนไม่ได้<br><span class="muted">กรุณาเปิดจากเมนูในแชต LINE พรายกระซิบ</span>' : 'โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง');
