@@ -367,6 +367,10 @@ async function sayAndClose(text, fallback) {
 }
 
 const isNew = () => !S.trialUsed && !Object.keys(S.paid).length;
+// เหมาทุกสาย: เลือกครบ 4 สาย ราคารวมเหลือ S.bundlePrice (ต้องตรงกับ BUNDLE_PRICE ใน line_members.gs)
+const fullPrice = ks => ks.reduce((s, k) => s + S.packages[k].price, 0);
+const isBundle = ks => Object.keys(S.packages).every(k => ks.includes(k));
+const cartTotal = ks => (S.bundlePrice && isBundle(ks)) ? S.bundlePrice : fullPrice(ks);
 const stationsOf = k => S.stationList.filter(s => s.p === k);
 
 function pkgStatus(k) {
@@ -402,15 +406,22 @@ function renderPkg() {
       <div class="chips">${chips}</div>
     </button>`;
   });
+  if (!trialMode && S.bundlePrice) {
+    const full = fullPrice(Object.keys(S.packages)), left = Object.keys(S.packages).filter(k => !pick.includes(k));
+    h += isBundle(pick)
+      ? `<div class="note gift">🎉 <b>เหมาทุกสาย ครบ 4 สาย เหลือ ฿${S.bundlePrice}</b> <span class="muted">(ปกติ ฿${full} ประหยัด ฿${full - S.bundlePrice})</span></div>`
+      : `<div class="note gift">💡 เลือกครบ 4 สาย จ่ายแค่ <b>฿${S.bundlePrice}</b> <span class="muted">(ปกติ ฿${full})</span>${left.length && left.length < 4 ? `<br><span class="muted">อีก ${left.length} สายก็ครบ</span>` : ''}
+         <div style="margin-top:8px"><button class="mini" onclick="pickAll()">เลือกครบ 4 สาย</button></div></div>`;
+  }
   h += expBlock(!trialMode) + consentBlock();
   $('main').innerHTML = h;
 
-  const total = pick.reduce((s, k) => s + S.packages[k].price, 0);
+  const total = cartTotal(pick);
   const ready = pick.length && canSave();
   $('barIn').innerHTML = trialMode
     ? `<button class="cta" onclick="startTrial()" ${ready ? '' : 'disabled'}>${!pick.length ? 'เลือก 1 สายเพื่อเริ่มทดลอง'
         : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + esc(S.packages[pick[0]].name)}</button>`
-    : `<div class="sum">ยอดรวม<b>฿${total.toLocaleString()}</b></div>
+    : `<div class="sum">ยอดรวม${isBundle(pick) && S.bundlePrice ? ` <s>฿${fullPrice(pick)}</s>` : ''}<b>฿${total.toLocaleString()}</b></div>
        <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'ยืนยัน · ดูวิธีโอน'}</button>`;
 }
 
@@ -468,6 +479,7 @@ function togglePkg(k) {
   else pick = pick.includes(k) ? pick.filter(x => x !== k) : [...pick, k].sort();
   renderPkg();
 }
+function pickAll() { pick = Object.keys(S.packages).sort(); renderPkg(); }
 function togSt(c) { picked.has(c) ? picked.delete(c) : picked.add(c); renderSt(); }
 function allOf(k, on) { stationsOf(k).forEach(s => on ? picked.add(s.c) : picked.delete(s.c)); renderSt(); }
 
@@ -493,7 +505,7 @@ function confirmPay() {
     const r = await api('cart', { pkgs: pick });
     if (r.state) S = r.state;
     if (!r.ok) { toast('ทำรายการไม่ได้ ลองใหม่'); render(); return; }
-    const total = pick.reduce((s, k) => s + S.packages[k].price, 0);
+    const total = cartTotal(pick);
     await sayAndClose('ยืนยันจ่าย ' + total + ' บาท', 'กลับไปที่แชต แล้วพิมพ์ "ยืนยันจ่าย" เพื่อดูเลขบัญชี');
     render();
   });
