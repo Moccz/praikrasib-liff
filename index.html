@@ -178,7 +178,7 @@
 <!-- ประกาศความเป็นส่วนตัว (PDPA) — แก้ข้อความแล้วต้องเปลี่ยน PDPA_VERSION ใน line_members.gs ด้วย ลูกค้าจะถูกขอให้ติ๊กใหม่ -->
 <div class="sheet hide" id="policy" onclick="if (event.target === this) closePolicy()">
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
-    <header><h2 id="policyTitle">ประกาศความเป็นส่วนตัว</h2><button onclick="closePolicy()" aria-label="ปิด">×</button></header>
+    <header><h2 id="policyTitle">ข้อมูลของคุณ เราดูแลยังไง</h2><button onclick="closePolicy()" aria-label="ปิด">×</button></header>
     <div class="body">
       <p class="muted">ฉบับวันที่ 23 พฤศจิกายน 2569 · ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
       <p>"พรายกระซิบ" (เรียกว่า "เรา") ให้บริการแจ้งเตือนห้องเช่าที่เจ้าของโพสต์เอง ตามสถานี BTS ที่คุณเลือก ผ่าน LINE Official Account
@@ -267,7 +267,7 @@
       <h3>11. ติดต่อเรา</h3>
       <p>แชต LINE Official Account "พรายกระซิบ" — พิมพ์คำว่า "ข้อมูลส่วนตัว" ตามด้วยเรื่องที่ต้องการ</p>
     </div>
-    <div class="foot"><button class="cta" style="width:100%" onclick="acceptPolicy()">อ่านแล้ว ยอมรับ</button></div>
+    <div class="foot"><button class="cta" style="width:100%" onclick="acceptPolicy()">เข้าใจแล้ว ตกลง 👍</button></div>
   </div>
 </div>
 
@@ -309,13 +309,13 @@ function closePolicy() { $('policy').classList.add('hide'); document.body.style.
 function acceptPolicy() { agree = true; closePolicy(); render(); }
 function toggleAgree() { agree = !agree; render(); }
 function consentBlock() {
-  if (S.consent) return `<p class="muted" style="text-align:center;margin:4px 0 14px">✓ ยอมรับประกาศความเป็นส่วนตัวแล้ว · <a class="link" onclick="openPolicy()">อ่านอีกครั้ง</a></p>`;
+  if (S.consent) return `<p class="muted" style="text-align:center;margin:4px 0 14px">🔒 ข้อมูลของคุณได้รับการดูแลตาม PDPA · <a class="link" onclick="openPolicy()">ดูรายละเอียด</a></p>`;
   return `<button class="consent ${agree ? 'ok' : 'need'}" onclick="toggleAgree()" aria-pressed="${agree}">
       <span class="tick"></span>
-      <span class="txt"><b>ฉันได้อ่านและยอมรับ ประกาศความเป็นส่วนตัว (PDPA)</b><br>
-        เราเก็บชื่อ LINE, แพ็กและสถานีที่เลือก, อายุงาน (ถ้ากรอก) และสลิปโอนเงิน เพื่อให้บริการเท่านั้น ไม่ขาย ไม่ส่งต่อ
-        เก็บไม่เกิน 1 ปีหลังเลิกใช้ ขอดู แก้ หรือลบได้ทุกเมื่อ<br>
-        <a class="link" onclick="event.stopPropagation(); openPolicy()">อ่านฉบับเต็ม</a></span>
+      <span class="txt"><b>🔒 ข้อมูลของคุณ เราดูแลให้</b><br>
+        ใช้แค่เท่าที่จำเป็น เพื่อส่งห้องให้ตรงสถานีที่คุณเลือก
+        ไม่ขอเบอร์โทร ไม่ขอบัตรประชาชน ไม่ขาย ไม่ส่งต่อใคร อยากให้ลบเมื่อไหร่ ทักแอดมินได้เลย<br>
+        <b style="color:var(--green-dark)">ติ๊กเพื่อตกลงตาม</b> <a class="link" onclick="event.stopPropagation(); openPolicy()">ประกาศความเป็นส่วนตัว</a></span>
     </button>`;
 }
 
@@ -401,9 +401,9 @@ function renderPkg() {
   const ready = pick.length && canSave();
   $('barIn').innerHTML = trialMode
     ? `<button class="cta" onclick="startTrial()" ${ready ? '' : 'disabled'}>${!pick.length ? 'เลือก 1 สายเพื่อเริ่มทดลอง'
-        : !canSave() ? 'ติ๊กยอมรับ PDPA ด้านล่างก่อน' : 'เริ่มทดลองฟรี · ' + esc(S.packages[pick[0]].name)}</button>`
+        : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + esc(S.packages[pick[0]].name)}</button>`
     : `<div class="sum">ยอดรวม<b>฿${total.toLocaleString()}</b></div>
-       <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊กยอมรับ PDPA ก่อน' : 'ยืนยัน · ดูวิธีโอน'}</button>`;
+       <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'ยืนยัน · ดูวิธีโอน'}</button>`;
 }
 
 function renderSt() {
@@ -437,7 +437,7 @@ function renderSt() {
   const saved = new Set(S.stations.filter(c => { const s = S.stationList.find(x => x.c === c); return s && act.includes(s.p); }));
   const changed = saved.size !== picked.size || [...picked].some(c => !saved.has(c));
   $('barIn').innerHTML = `<div class="sum">เลือกไว้<b>${picked.size} สถานี</b></div>
-    <button class="cta" onclick="saveSt()" ${changed && canSave() ? '' : 'disabled'}>${!changed ? 'บันทึกแล้ว ✓' : canSave() ? 'บันทึก' : 'ติ๊กยอมรับ PDPA ด้านบนก่อน'}</button>`;
+    <button class="cta" onclick="saveSt()" ${changed && canSave() ? '' : 'disabled'}>${!changed ? 'บันทึกแล้ว ✓' : canSave() ? 'บันทึก' : 'ติ๊ก "ตกลง" ด้านบนก่อนนะ'}</button>`;
 }
 
 function render() {
