@@ -203,6 +203,18 @@
 <div class="toast" id="toast"></div>
 
 <!-- นโยบายความเป็นส่วนตัว (PDPA) — แก้ข้อความแล้วต้องเปลี่ยน PDPA_VERSION ใน line_members.gs ด้วย ลูกค้าจะถูกขอให้ติ๊กใหม่ -->
+<!-- กล่องยืนยันก่อนบันทึก (ทำเอง ไม่ใช้ confirm() ของเบราว์เซอร์ เพราะใน LINE บางทีไม่ขึ้น) -->
+<div class="sheet hide" id="confirmBox" onclick="if (event.target === this) closeConfirm()">
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <header><h2 id="confirmTitle"></h2><button onclick="closeConfirm()" aria-label="ปิด">×</button></header>
+    <div class="body" id="confirmBody"></div>
+    <div class="foot" style="display:flex;gap:10px">
+      <button class="cta" style="background:#F3F4F6;color:var(--ink);box-shadow:none" onclick="closeConfirm()">กลับไปแก้</button>
+      <button class="cta" id="confirmOk"></button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet hide" id="policy" onclick="if (event.target === this) closePolicy()">
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
     <header><h2 id="policyTitle">นโยบายความเป็นส่วนตัว</h2><button onclick="closePolicy()" aria-label="ปิด">×</button></header>
@@ -320,6 +332,7 @@ let agree = false;     // ติ๊กยอมรับประกาศคว
 let expPick = '';      // อายุงานที่เลือก / พิมพ์
 let expOther = false;  // เปิดช่องพิมพ์เอง
 let rolePick = '';     // "คุณคือ" ที่เลือก (ยังไม่บันทึก)
+let roleEdit = false;  // กำลังแก้ "คุณคือ" ในแท็บสถานะ
 let trialSt = new Set(); // สถานีที่เลือกตอนเริ่มทดลอง (ไม่เกิน S.trialMax)
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -400,14 +413,32 @@ function roleBlock(saveNow) {
 function pickRole(o, saveNow) {
   rolePick = o;
   if (!saveNow) return render();
-  if (!canSave()) { toast('ติ๊ก "ตกลง" ด้านล่างก่อนนะ'); return render(); }
-  run(async () => {
-    const r = await api('role', { role: o });
-    if (r.state) { S = r.state; rolePick = ''; }
-    toast(r.ok ? 'บันทึกแล้ว ✅' : 'บันทึกไม่ได้ ลองใหม่');
-    render();
-  });
+  saveRole(o);
 }
+// บันทึก "คุณคือ" — ขึ้นกล่องยืนยันก่อนทุกครั้ง
+function saveRole(o) {
+  if (!o || o === S.role) { roleEdit = false; rolePick = ''; return render(); }
+  if (!canSave()) { toast('ติ๊ก "ขออนุญาตเก็บข้อมูล" ก่อนนะ'); return render(); }
+  askConfirm(S.role ? 'เปลี่ยน "คุณคือ"' : 'ยืนยัน "คุณคือ"',
+    `<p style="font-size:16px">${S.role ? `จาก <b>${esc(S.role)}</b> เป็น ` : ''}<b>${esc(o)}</b> ใช่ไหม?</p>`, 'ยืนยัน', () => run(async () => {
+      const r = await api('role', { role: o });
+      if (r.state) S = r.state;
+      rolePick = ''; roleEdit = false;
+      toast(r.ok ? 'บันทึกแล้ว ✅' : 'บันทึกไม่ได้ ลองใหม่');
+      render();
+    }));
+  render();
+}
+
+// ===== กล่องยืนยัน =====
+let confirmFn = null;
+function askConfirm(title, html, okLabel, fn) {
+  confirmFn = fn;
+  $('confirmTitle').textContent = title; $('confirmBody').innerHTML = html; $('confirmOk').textContent = okLabel;
+  $('confirmOk').onclick = () => { const f = confirmFn; closeConfirm(); if (f) f(); };
+  $('confirmBox').classList.remove('hide'); document.body.style.overflow = 'hidden';
+}
+function closeConfirm() { confirmFn = null; $('confirmBox').classList.add('hide'); document.body.style.overflow = ''; }
 
 // ===== ทดลอง: เลือกสถานีในสายที่เลือก ไม่เกิน S.trialMax =====
 function trialStBlock() {
@@ -617,8 +648,20 @@ function sendSlip() {
 const PAY_LABEL = { ok: 'ผ่าน', wait: 'รอตรวจ', reject: 'ไม่ผ่าน' };
 function renderStatus() {
   let h = '';
-  const roleTxt = S.role ? ` · ${esc(S.role)}` : '';
-  h += `<div class="note"><b>${esc(S.name || 'สมาชิก')}</b><div class="muted">ใช้มาแล้ว ${S.joinedDays || 0} วัน${roleTxt}</div></div>`;
+  if (roleEdit) {
+    const opts = S.roleOptions || [], cur = rolePick || S.role;
+    h += `<div class="note"><b>${esc(S.name || 'สมาชิก')}</b><div class="muted">ใช้มาแล้ว ${S.joinedDays || 0} วัน</div>
+      <div style="margin-top:10px"><b>คุณคือ</b></div>
+      <div class="opts">${opts.map(o => `<button class="opt ${cur === o ? 'on' : ''}" onclick="rolePick='${esc(o)}'; renderStatus()">${esc(o)}</button>`).join('')}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="mini" style="background:#F3F4F6;color:var(--ink)" onclick="roleEdit=false; rolePick=''; renderStatus()">ยกเลิก</button>
+        <button class="mini" onclick="saveRole(rolePick || S.role)" ${cur && cur !== S.role ? '' : 'disabled'}>บันทึก</button></div></div>`;
+    if (!S.consent) h += consentBlock();
+  } else {
+    h += `<div class="note"><b>${esc(S.name || 'สมาชิก')}</b>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="muted" style="flex:1">ใช้มาแล้ว ${S.joinedDays || 0} วัน · คุณคือ: ${S.role ? esc(S.role) : 'ยังไม่ระบุ'}</span>
+      <button class="link" onclick="roleEdit=true; rolePick=''; renderStatus()">แก้ไข</button></div></div>`;
+  }
   const rows = [];
   if (S.trial) rows.push(`<div><span>ทดลองฟรี · ${esc(S.packages[S.trial.pkg].name)}</span><span>${S.trial.active
       ? `<span class="pill wait">เหลือ ${S.trial.daysLeft} วัน</span>` : '<span class="pill reject">หมดแล้ว</span>'}</span></div>`);
@@ -685,12 +728,21 @@ function allOf(k, on) { stationsOf(k).forEach(s => on ? picked.add(s.c) : picked
 
 async function run(fn) {
   if (busy) return; busy = true;
-  document.querySelectorAll('.cta').forEach(b => { b.disabled = true; b.dataset.t = b.textContent; b.textContent = 'กำลังบันทึก…'; });
+  document.querySelectorAll('#main .cta, #barIn .cta').forEach(b => { b.disabled = true; b.dataset.t = b.textContent; b.textContent = 'กำลังบันทึก…'; });
   try { await fn(); } catch (e) { console.error(e); toast('เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'); render(); }
   busy = false;
 }
 
+// เริ่มทดลอง: สรุปให้ตรวจอีกครั้งก่อน (ช่วงทดลองเปลี่ยนสายไม่ได้)
 function startTrial() {
+  const names = S.stationList.filter(s => trialSt.has(s.c)).map(s => esc(s.n)).join(' · ');
+  askConfirm('ตรวจอีกครั้งก่อนเริ่มทดลอง', `<div class="kv">
+      <div><span>คุณคือ</span><span>${esc(curRole())}</span></div>
+      <div><span>สาย</span><span>${esc(S.packages[pick[0]].name)}</span></div>
+      <div><span>สถานี</span><span>${names}</span></div></div>
+    <p class="muted" style="margin-top:12px">⚠️ เริ่มแล้วเปลี่ยนสายไม่ได้ (เปลี่ยนสถานีในสายเดิมได้)</p>`, 'ยืนยัน เริ่มทดลอง', doStartTrial);
+}
+function doStartTrial() {
   run(async () => {
     const r = await api('trial', { pkg: pick[0], codes: [...trialSt], role: curRole(), exp: isAgent() ? expPick : '' });
     if (r.state) { S = r.state; resetFromState(); }
