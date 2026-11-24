@@ -166,7 +166,7 @@
     <div><h1>พรายกระซิบ</h1><p id="hello">ห้องเช่าจากเจ้าของโดยตรง ตามสถานี BTS</p></div>
   </div>
   <nav class="tabs" role="tablist">
-    <button id="tab-pkg" role="tab" onclick="go('pkg')">แพ็กเกจ</button>
+    <button id="tab-pkg" role="tab" onclick="go('pkg')">เลือกสาย</button>
     <button id="tab-st" role="tab" onclick="go('st')">เลือกสถานี</button>
   </nav>
 </header>
@@ -183,7 +183,7 @@
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
     <header><h2 id="policyTitle">นโยบายความเป็นส่วนตัว</h2><button onclick="closePolicy()" aria-label="ปิด">×</button></header>
     <div class="body">
-      <p class="muted">ฉบับที่ 2 · วันที่ 23 พฤศจิกายน 2569 · ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+      <p class="muted">ฉบับที่ 3 · วันที่ 24 พฤศจิกายน 2569 · ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
       <p>"พรายกระซิบ" (เรียกว่า "เรา") ให้บริการแจ้งเตือนห้องเช่าที่เจ้าของโพสต์เอง ตามสถานี BTS ที่คุณเลือก ผ่าน LINE Official Account
          นโยบายนี้อธิบายว่าเราเก็บข้อมูลอะไรของคุณ เก็บไปทำอะไร เก็บนานแค่ไหน ใครเข้าถึงได้ และคุณมีสิทธิ์อะไรบ้าง</p>
 
@@ -194,6 +194,7 @@
       <ul>
         <li><b>ข้อมูลบัญชี LINE:</b> รหัสผู้ใช้ LINE (User ID) และชื่อที่แสดงใน LINE</li>
         <li><b>ข้อมูลการใช้บริการ:</b> วันที่เพิ่มเพื่อน / เริ่มใช้ แพ็กเกจที่ทดลองหรือชำระเงิน วันหมดอายุ สถานีที่เลือก สถานะสมาชิก และประวัติการแจ้งเตือนต่ออายุ</li>
+        <li><b>ประเภทผู้ใช้:</b> คุณเป็นเอเจนต์ เจ้าของห้อง หรือคนหาห้องเช่า (เลือกตอนเริ่มทดลอง)</li>
         <li><b>อายุการทำงานเป็นเอเจนต์</b> (ไม่บังคับ) — ถ้าคุณเลือกหรือพิมพ์ให้</li>
         <li><b>ข้อมูลการชำระเงิน:</b> รูปสลิปโอนเงิน ยอดเงิน วันเวลา เลขอ้างอิงรายการ และข้อมูลที่ปรากฏบนสลิป เช่น ชื่อผู้โอน ธนาคาร และเลขบัญชีบางส่วน</li>
         <li><b>ข้อความที่คุณส่งหาแอดมิน</b> ในแชต LINE Official Account</li>
@@ -209,7 +210,7 @@
             <span class="muted">(ฐาน: สัญญา และประโยชน์โดยชอบด้วยกฎหมาย)</span></li>
         <li><b>แจ้งเตือนเกี่ยวกับบัญชีของคุณ</b> — เช่น ใกล้หมดอายุ หมดอายุแล้ว ต่ออายุสำเร็จ
             <span class="muted">(ฐาน: สัญญา)</span></li>
-        <li><b>ปรับปรุงบริการ</b> — เช่น ดูภาพรวมว่าสมาชิกใช้สถานีไหน มีประสบการณ์ทำงานแบบไหน เพื่อพัฒนาบริการให้ดีขึ้น
+        <li><b>ปรับปรุงบริการ</b> — เช่น ดูภาพรวมว่าสมาชิกใช้สถานีไหน เป็นผู้ใช้กลุ่มไหน มีประสบการณ์ทำงานแบบไหน เพื่อพัฒนาบริการให้ดีขึ้น
             <span class="muted">(ฐาน: ประโยชน์โดยชอบด้วยกฎหมาย)</span></li>
         <li><b>ปฏิบัติตามกฎหมาย</b> — เช่น การเก็บหลักฐานทางบัญชีและภาษี หรือเมื่อหน่วยงานรัฐร้องขอตามกฎหมาย
             <span class="muted">(ฐาน: หน้าที่ตามกฎหมาย)</span></li>
@@ -239,7 +240,7 @@
         <li><b>บันทึกการยอมรับนโยบาย:</b> เท่ากับระยะเวลาเก็บข้อมูลสมาชิก เพื่อใช้เป็นหลักฐานการยินยอม</li>
         <li><b>ข้อความแชตกับแอดมิน:</b> ตามระยะเวลาที่ระบบ LINE Official Account เก็บไว้</li>
         <li>หากมีข้อพิพาทหรือการเรียกร้องทางกฎหมาย เราอาจเก็บข้อมูลที่เกี่ยวข้องต่อไปจนกว่าเรื่องจะสิ้นสุด</li>
-        <li>เมื่อครบกำหนด เราจะลบ ทำลาย หรือทำให้ข้อมูลไม่สามารถระบุตัวคุณได้</li>
+        <li>เมื่อครบกำหนด ระบบจะลบข้อมูลของคุณออกจากฐานข้อมูลสมาชิกและการชำระเงินโดยอัตโนมัติ (ตรวจทุกวัน)</li>
       </ul>
 
       <h3>7. สิทธิ์ของคุณ</h3>
@@ -293,6 +294,8 @@ let busy = false;
 let agree = false;     // ติ๊กยอมรับประกาศความเป็นส่วนตัวในหน้านี้แล้ว (ยังไม่บันทึก)
 let expPick = '';      // อายุงานที่เลือก / พิมพ์
 let expOther = false;  // เปิดช่องพิมพ์เอง
+let rolePick = '';     // "คุณคือ" ที่เลือก (ยังไม่บันทึก)
+let trialSt = new Set(); // สถานีที่เลือกตอนเริ่มทดลอง (ไม่เกิน S.trialMax)
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -322,6 +325,7 @@ function consentBlock() {
       <span class="txt"><b>🔒 ขออนุญาตเก็บข้อมูล (PDPA)</b><br>
         เพื่อส่งห้องให้ตรงสถานีที่คุณเลือก เราขอเก็บ:<br>
         • ชื่อ LINE<br>
+        • คุณเป็นใคร (เอเจนต์ / เจ้าของห้อง / หาห้องเช่า)<br>
         • สาย BTS และสถานีที่เลือก<br>
         • ระยะเวลาการทำงานเป็นเอเจนต์ (ถ้ากรอก)<br>
         • สลิปโอนเงิน (ไว้ตรวจยอด)<br>
@@ -357,6 +361,47 @@ function saveExp() {
   });
 }
 
+// ===== คุณคือ (เอเจนต์ / เจ้าของห้อง / หาห้องเช่า) =====
+const curRole = () => rolePick || S.role || '';
+const isAgent = () => !curRole() || curRole() === (S.roleOptions || [])[0];
+function roleBlock(saveNow) {
+  const opts = S.roleOptions || [];
+  const cur = curRole();
+  return `<div class="note ${cur ? '' : 'gift'}"><b>คุณคือ</b> ${saveNow ? '<span class="muted">(ยังไม่ได้ระบุ)</span>' : '<span class="muted">(เลือก 1 ข้อ)</span>'}
+    <div class="muted">บริการนี้ทำมาสำหรับเอเจนต์อสังหาฯ</div>
+    <div class="opts">${opts.map(o => `<button class="opt ${cur === o ? 'on' : ''}" onclick="pickRole('${esc(o)}', ${!!saveNow})">${esc(o)}</button>`).join('')}</div>
+  </div>`;
+}
+function pickRole(o, saveNow) {
+  rolePick = o;
+  if (!saveNow) return render();
+  if (!canSave()) { toast('ติ๊ก "ตกลง" ด้านล่างก่อนนะ'); return render(); }
+  run(async () => {
+    const r = await api('role', { role: o });
+    if (r.state) { S = r.state; rolePick = ''; }
+    toast(r.ok ? 'บันทึกแล้ว ✅' : 'บันทึกไม่ได้ ลองใหม่');
+    render();
+  });
+}
+
+// ===== ทดลอง: เลือกสถานีในสายที่เลือก ไม่เกิน S.trialMax =====
+function trialStBlock() {
+  if (!pick.length) return '';
+  const k = pick[0], st = stationsOf(k), max = S.trialMax || 3;
+  return `<section class="line" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
+      <div><div class="t">เลือกสถานี ${esc(S.packages[k].name)}</div><div class="s">ช่วงทดลองเลือกได้ ${max} สถานี · เลือกแล้ว ${trialSt.size}/${max}</div></div></div>
+      ${st.map(s => `<button class="st ${trialSt.has(s.c) ? 'on' : ''}" onclick="togTrialSt('${s.c}')" aria-pressed="${trialSt.has(s.c)}">
+          <span class="nm">${esc(s.n)}</span><span class="cd">${esc(s.c)}</span><span class="sw"></span></button>`).join('')}
+    </section>`;
+}
+function togTrialSt(c) {
+  const max = S.trialMax || 3;
+  if (trialSt.has(c)) trialSt.delete(c);
+  else if (trialSt.size >= max) { toast(`ช่วงทดลองเลือกได้ ${max} สถานี เอาอันเดิมออกก่อนนะ`); return; }
+  else trialSt.add(c);
+  renderPkg();
+}
+
 // ส่งข้อความในแชตแทนลูกค้า → บอทตอบกลับ (ฟรี) แล้วปิดหน้า
 async function sayAndClose(text, fallback) {
   try {
@@ -388,7 +433,8 @@ function renderPkg() {
   const trialMode = isNew();
   let h = '';
   if (trialMode) {
-    h += `<div class="note gift">🎁 <b>ทดลองฟรี 7 วัน</b><br>เลือกได้ 1 สาย ระบบติ๊กทุกสถานีในสายให้ เอาออกทีหลังได้</div>`;
+    h += `<div class="note gift">🎁 <b>ทดลองฟรี 7 วัน</b><br>เลือกได้ 1 สาย ไม่เกิน ${S.trialMax || 3} สถานี · จ่ายแล้วได้ทั้งสาย</div>`;
+    h += roleBlock(false);
   } else {
     const lines = [];
     if (S.trial) lines.push(`<div><span>ทดลอง ${esc(S.packages[S.trial.pkg].name)}</span><span>${S.trial.active ? 'ถึง ' + esc(S.trial.until) : 'หมดแล้ว'}</span></div>`);
@@ -408,6 +454,7 @@ function renderPkg() {
       </div>
       <div class="chips">${chips}</div>
     </button>`;
+    if (trialMode && on) h += trialStBlock();   // เลือกสถานีต่อใต้สายที่เลือกเลย
   });
   if (!trialMode && S.bundlePrice) {
     const full = fullPrice(Object.keys(S.packages)), left = Object.keys(S.packages).filter(k => !pick.includes(k));
@@ -416,14 +463,18 @@ function renderPkg() {
       : `<div class="note gift">💡 เลือกครบ 4 สาย จ่ายแค่ <b>฿${S.bundlePrice}</b> <span class="muted">(ปกติ ฿${full})</span>${left.length && left.length < 4 ? `<br><span class="muted">อีก ${left.length} สายก็ครบ</span>` : ''}
          <div style="margin-top:8px"><button class="mini" onclick="pickAll()">เลือกครบ 4 สาย</button></div></div>`;
   }
-  h += expBlock(!trialMode) + consentBlock();
+  if (!trialMode && !S.role) h += roleBlock(true);
+  h += (isAgent() ? expBlock(!trialMode) : '') + consentBlock();
   $('main').innerHTML = h;
 
   const total = cartTotal(pick);
   const ready = pick.length && canSave();
+  const trialReady = ready && curRole() && trialSt.size > 0;
   $('barIn').innerHTML = trialMode
-    ? `<button class="cta" onclick="startTrial()" ${ready ? '' : 'disabled'}>${!pick.length ? 'เลือก 1 สายเพื่อเริ่มทดลอง'
-        : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + esc(S.packages[pick[0]].name)}</button>`
+    ? `<button class="cta" onclick="startTrial()" ${trialReady ? '' : 'disabled'}>${!curRole() ? 'เลือก "คุณคือ" ด้านบนก่อนนะ'
+        : !pick.length ? 'เลือก 1 สายเพื่อเริ่มทดลอง'
+        : !trialSt.size ? `เลือกสถานี (ไม่เกิน ${S.trialMax || 3})`
+        : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + trialSt.size + ' สถานี'}</button>`
     : `<div class="sum">ยอดรวม${isBundle(pick) && S.bundlePrice ? ` <s>฿${fullPrice(pick)}</s>` : ''}<b>฿${total.toLocaleString()}</b></div>
        <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'ยืนยัน · ดูวิธีโอน'}</button>`;
 }
@@ -447,10 +498,10 @@ function renderSt() {
             <div class="lock">🔒 ยังไม่ได้ใช้สายนี้ <button onclick="go('pkg')">สมัคร ฿${P.price}</button></div></section>`;
       return;
     }
-    const n = st.filter(s => picked.has(s.c)).length, all = n === st.length;
+    const n = st.filter(s => picked.has(s.c)).length, all = n === st.length, capped = S.trialCap === k;
     h += `<section class="line" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
-          <div><div class="t">${esc(P.name)}</div><div class="s">เลือกอยู่ ${n}/${st.length} สถานี</div></div>
-          <button class="all" onclick="allOf('${k}', ${!all})">${all ? 'ล้างทั้งสาย' : 'เลือกทั้งสาย'}</button></div>
+          <div><div class="t">${esc(P.name)}</div><div class="s">${capped ? `ช่วงทดลอง เลือกได้ ${S.trialMax} สถานี · เลือกอยู่ ${n}/${S.trialMax}` : `เลือกอยู่ ${n}/${st.length} สถานี`}</div></div>
+          ${capped ? '' : `<button class="all" onclick="allOf('${k}', ${!all})">${all ? 'ล้างทั้งสาย' : 'เลือกทั้งสาย'}</button>`}</div>
           ${st.map(s => `<button class="st ${picked.has(s.c) ? 'on' : ''}" onclick="togSt('${s.c}')" aria-pressed="${picked.has(s.c)}">
               <span class="nm">${esc(s.n)}</span><span class="cd">${esc(s.c)}</span><span class="sw"></span></button>`).join('')}
           </section>`;
@@ -478,12 +529,22 @@ function resetFromState() {
 }
 
 function togglePkg(k) {
-  if (isNew()) pick = pick[0] === k ? [] : [k];
+  if (isNew()) { pick = pick[0] === k ? [] : [k]; trialSt = new Set(); }
   else pick = pick.includes(k) ? pick.filter(x => x !== k) : [...pick, k].sort();
   renderPkg();
 }
 function pickAll() { pick = Object.keys(S.packages).sort(); renderPkg(); }
-function togSt(c) { picked.has(c) ? picked.delete(c) : picked.add(c); renderSt(); }
+function togSt(c) {
+  if (picked.has(c)) picked.delete(c);
+  else {
+    const k = S.stationList.find(s => s.c === c).p;
+    if (S.trialCap === k && stationsOf(k).filter(s => picked.has(s.c)).length >= S.trialMax) {
+      toast(`ช่วงทดลองเลือกได้ ${S.trialMax} สถานี เอาอันเดิมออกก่อนนะ`); return;
+    }
+    picked.add(c);
+  }
+  renderSt();
+}
 function allOf(k, on) { stationsOf(k).forEach(s => on ? picked.add(s.c) : picked.delete(s.c)); renderSt(); }
 
 async function run(fn) {
@@ -495,9 +556,10 @@ async function run(fn) {
 
 function startTrial() {
   run(async () => {
-    const r = await api('trial', { pkg: pick[0], exp: expPick });
+    const r = await api('trial', { pkg: pick[0], codes: [...trialSt], role: curRole(), exp: isAgent() ? expPick : '' });
     if (r.state) { S = r.state; resetFromState(); }
     if (!r.ok) { toast(r.error === 'trial_used' ? 'คุณใช้สิทธิ์ทดลองไปแล้ว' : 'ทำรายการไม่ได้ ลองใหม่'); render(); return; }
+    rolePick = ''; trialSt = new Set();
     toast('เริ่มทดลองแล้ว ✅');
     await sayAndClose('เริ่มทดลองแล้ว', 'เริ่มทดลองแล้ว ✅ กลับไปที่แชตได้เลย');
     go('st');
@@ -517,7 +579,7 @@ function saveSt() {
   run(async () => {
     const r = await api('stations', { codes: [...picked] });
     if (r.state) { S = r.state; resetFromState(); }
-    toast(r.ok ? 'บันทึกแล้ว ✅ รอบถัดไปได้ห้องตามนี้' : 'บันทึกไม่ได้ ลองใหม่');
+    toast(r.ok ? 'บันทึกแล้ว ✅ รอบถัดไปได้ห้องตามนี้' : r.error === 'trial_max' ? `ช่วงทดลองเลือกได้ ${S.trialMax} สถานี` : 'บันทึกไม่ได้ ลองใหม่');
     render();
   });
 }
@@ -527,13 +589,8 @@ function fail(msg) {
   $('bar').classList.add('hide');
 }
 
-// แท็บที่จะเปิด: ?tab=stations หรือ ?tab=packages — ตอนเปิดครั้งแรก LINE ห่อไว้ใน ?liff.state=%3Ftab%3D...
-function wantedTab() {
-  const q = new URLSearchParams(location.search);
-  let t = q.get('tab');
-  if (!t && q.get('liff.state')) { try { t = new URLSearchParams(q.get('liff.state').replace(/^[^?]*\?/, '')).get('tab'); } catch (e) {} }
-  return t === 'stations' ? 'st' : 'pkg';
-}
+// เปิดหน้าเว็บที่แท็บ "เลือกสาย" เสมอ (เจ้าของสั่ง 24 พ.ย.) — ลิงก์ ?tab=stations จาก rich menu ก็เปิดที่ "เลือกสาย" ก่อน
+function wantedTab() { return 'pkg'; }
 
 (async function start() {
   view = wantedTab();
@@ -546,7 +603,6 @@ function wantedTab() {
     if (!r.ok) return fail(r.error === 'auth' ? 'ยืนยันตัวตนไม่ได้<br><span class="muted">กรุณาเปิดจากเมนูในแชต LINE พรายกระซิบ</span>' : 'โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง');
     S = r.state; resetFromState();
     if (S.name) $('hello').textContent = 'สวัสดีคุณ ' + S.name;
-    if (view === 'st' && !S.active.length) view = 'pkg';
     render();
   } catch (e) {
     console.error(e);
