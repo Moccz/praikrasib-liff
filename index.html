@@ -33,7 +33,7 @@
   .brand .logo img { width: 100%; height: 100%; border-radius: 50%; display: block; }
   .brand h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: .2px; }
   .brand p { margin: 0; font-size: 12.5px; opacity: .9; }
-  .tabs { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; background: rgba(0,0,0,.14);
+  .tabs { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; background: rgba(0,0,0,.14);
           border-radius: 12px; padding: 4px; }
   .tabs button { padding: 9px 0; border-radius: 9px; color: rgba(255,255,255,.85); font-weight: 600; font-size: 14.5px;
                  transition: background .2s, color .2s; }
@@ -157,6 +157,28 @@
   .sheet h3 { font-size: 15px; color: var(--ink); margin: 18px 0 6px; }
   .sheet ul { padding-left: 20px; margin: 6px 0; } .sheet li { margin: 4px 0; }
   .sheet .foot { padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+
+  /* จ่ายเงิน / สถานะ */
+  .amount { text-align: center; padding: 18px 16px; }
+  .amount .big { font-size: 34px; font-weight: 700; color: var(--accent-dark); line-height: 1.2; }
+  .bank { display: flex; align-items: center; gap: 10px; background: var(--brand-soft); border-radius: 12px; padding: 12px 14px; margin-top: 10px; }
+  .bank .txt { flex: 1; color: var(--ink); font-weight: 500; white-space: pre-line; word-break: break-word; }
+  .qr { display: block; max-width: 240px; width: 100%; margin: 12px auto 0; border-radius: 12px; }
+  .drop { display: block; width: 100%; border: 2px dashed #D8C6E6; border-radius: var(--radius); background: #FCFAFE; padding: 22px 16px;
+          text-align: center; color: var(--ink-2); margin-bottom: 14px; }
+  .drop .ic { font-size: 34px; }
+  .prev { display: block; max-width: 100%; max-height: 360px; margin: 0 auto 10px; border-radius: 12px; box-shadow: var(--shadow); }
+  .result { text-align: center; padding: 26px 18px; }
+  .result .big { font-size: 46px; }
+  .kv div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #F3F4F6; }
+  .kv div:last-child { border-bottom: 0; }
+  .kv span:first-child { color: var(--ink-2); }
+  .kv span:last-child { text-align: right; font-weight: 500; }
+  .pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.ok { background: var(--brand-soft); color: var(--brand-dark); }
+  .pill.wait { background: #FFF4D6; color: #B45309; }
+  .pill.reject { background: #FEE2E2; color: var(--danger); }
+  .stchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -168,6 +190,7 @@
   <nav class="tabs" role="tablist">
     <button id="tab-pkg" role="tab" onclick="go('pkg')">เลือกสาย</button>
     <button id="tab-st" role="tab" onclick="go('st')">เลือกสถานี</button>
+    <button id="tab-status" role="tab" onclick="go('status')">สถานะ</button>
   </nav>
 </header>
 
@@ -176,6 +199,7 @@
 </main>
 
 <div class="bar hide" id="bar"><div class="in" id="barIn"></div></div>
+<input type="file" id="slipIn" accept="image/*" class="hide" onchange="gotSlip(this)">
 <div class="toast" id="toast"></div>
 
 <!-- นโยบายความเป็นส่วนตัว (PDPA) — แก้ข้อความแล้วต้องเปลี่ยน PDPA_VERSION ใน line_members.gs ด้วย ลูกค้าจะถูกขอให้ติ๊กใหม่ -->
@@ -183,7 +207,7 @@
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
     <header><h2 id="policyTitle">นโยบายความเป็นส่วนตัว</h2><button onclick="closePolicy()" aria-label="ปิด">×</button></header>
     <div class="body">
-      <p class="muted">ฉบับที่ 3 · วันที่ 24 พฤศจิกายน 2569 · ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
+      <p class="muted">ฉบับที่ 4 · วันที่ 24 พฤศจิกายน 2569 · ตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)</p>
       <p>"พรายกระซิบ" (เรียกว่า "เรา") ให้บริการแจ้งเตือนห้องเช่าที่เจ้าของโพสต์เอง ตามสถานี BTS ที่คุณเลือก ผ่าน LINE Official Account
          นโยบายนี้อธิบายว่าเราเก็บข้อมูลอะไรของคุณ เก็บไปทำอะไร เก็บนานแค่ไหน ใครเข้าถึงได้ และคุณมีสิทธิ์อะไรบ้าง</p>
 
@@ -221,7 +245,7 @@
       <ul>
         <li>แอดมินของพรายกระซิบ เท่าที่จำเป็นต่อการให้บริการ</li>
         <li><b>LY Corporation (LINE)</b> — ส่งข้อความ ยืนยันตัวตนเมื่อคุณเปิดหน้านี้</li>
-        <li><b>Google</b> (Google Sheets / Apps Script) — ระบบเก็บข้อมูลสมาชิกและประมวลผลคำสั่ง</li>
+        <li><b>Google</b> (Google Sheets / Apps Script / Google Drive) — ระบบเก็บข้อมูลสมาชิก ประมวลผลคำสั่ง และเก็บรูปสลิปที่คุณแนบในหน้านี้ (โฟลเดอร์ส่วนตัวของแอดมิน ไม่แชร์)</li>
         <li><b>SlipOK</b> — บริการตรวจสอบสลิปอัตโนมัติ (ได้รับรูปสลิปและยอดเงินเพื่อตรวจสอบเท่านั้น)</li>
         <li><b>GitHub</b> — ที่วางหน้าเว็บนี้ (ไม่ได้รับข้อมูลสมาชิกของคุณ)</li>
         <li>หน่วยงานของรัฐ เมื่อมีกฎหมายหรือคำสั่งที่ชอบด้วยกฎหมายกำหนด</li>
@@ -236,7 +260,8 @@
       <ul>
         <li><b>ข้อมูลบัญชี LINE, ข้อมูลการใช้บริการ และอายุการทำงาน:</b> ตลอดระยะเวลาที่คุณเป็นสมาชิก และต่อไปอีก <b>1 ปี</b>
             นับจากวันที่สิ้นสุดการใช้บริการ (แพ็กเกจหมดอายุโดยไม่ต่ออายุ) หรือวันที่คุณบล็อก LINE Official Account</li>
-        <li><b>ข้อมูลการชำระเงินและสลิปโอนเงิน:</b> <b>5 ปี</b> นับจากวันที่ชำระเงิน ตามที่กฎหมายบัญชีและภาษีอากรกำหนด</li>
+        <li><b>ข้อมูลการชำระเงินและสลิปโอนเงิน:</b> <b>5 ปี</b> นับจากวันที่ชำระเงิน ตามที่กฎหมายบัญชีและภาษีอากรกำหนด
+            (รูปสลิปที่แนบในหน้านี้เก็บใน Google Drive / ที่ส่งในแชตอยู่ในแชต LINE Official Account)</li>
         <li><b>บันทึกการยอมรับนโยบาย:</b> เท่ากับระยะเวลาเก็บข้อมูลสมาชิก เพื่อใช้เป็นหลักฐานการยินยอม</li>
         <li><b>ข้อความแชตกับแอดมิน:</b> ตามระยะเวลาที่ระบบ LINE Official Account เก็บไว้</li>
         <li>หากมีข้อพิพาทหรือการเรียกร้องทางกฎหมาย เราอาจเก็บข้อมูลที่เกี่ยวข้องต่อไปจนกว่าเรื่องจะสิ้นสุด</li>
@@ -328,7 +353,7 @@ function consentBlock() {
         • คุณเป็นใคร (เอเจนต์ / เจ้าของห้อง / หาห้องเช่า)<br>
         • สาย BTS และสถานีที่เลือก<br>
         • ระยะเวลาการทำงานเป็นเอเจนต์ (ถ้ากรอก)<br>
-        • สลิปโอนเงิน (ไว้ตรวจยอด)<br>
+        • สลิปโอนเงิน (ไว้ตรวจยอด เก็บใน Google Drive)<br>
         <span class="muted">เก็บตลอดที่เป็นสมาชิก และอีก 1 ปีหลังเลิกใช้ · สลิปเก็บ 5 ปีตามกฎหมายบัญชี</span><br>
         <b style="color:var(--ink)">ฉันได้อ่านและยอมรับ</b> <a class="link" onclick="event.stopPropagation(); openPolicy()">นโยบายความเป็นส่วนตัว</a></span>
     </button>`;
@@ -476,7 +501,7 @@ function renderPkg() {
         : !trialSt.size ? `เลือกสถานี (ไม่เกิน ${S.trialMax || 3})`
         : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + trialSt.size + ' สถานี'}</button>`
     : `<div class="sum">ยอดรวม${isBundle(pick) && S.bundlePrice ? ` <s>฿${fullPrice(pick)}</s>` : ''}<b>฿${total.toLocaleString()}</b></div>
-       <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'ยืนยัน · ดูวิธีโอน'}</button>`;
+       <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'ไปหน้าจ่ายเงิน'}</button>`;
 }
 
 function renderSt() {
@@ -488,7 +513,7 @@ function renderSt() {
     $('main').innerHTML = h; $('bar').classList.add('hide'); return;
   }
   if (!S.consent) h += consentBlock();
-  h += `<div class="note">ติ๊กสถานีที่อยากได้ห้อง · บอทส่งสรุปวันละ 5 รอบ (9 · 12 · 15 · 18 · 21 น.)</div>`;
+  h += `<div class="note">ติ๊กสถานีที่อยากได้ห้อง · พรายส่งสรุปวันละ 5 รอบ (9 · 12 · 15 · 18 · 21 น.)</div>`;
   const order = Object.keys(S.packages).sort((a, b) => (act.includes(b) - act.includes(a)));
   order.forEach(k => {
     const P = S.packages[k], st = stationsOf(k);
@@ -513,13 +538,124 @@ function renderSt() {
     <button class="cta" onclick="saveSt()" ${changed && canSave() ? '' : 'disabled'}>${!changed ? 'บันทึกแล้ว ✓' : canSave() ? 'บันทึก' : 'ติ๊ก "ตกลง" ด้านบนก่อนนะ'}</button>`;
 }
 
-function render() {
-  $('tab-pkg').classList.toggle('on', view === 'pkg');
-  $('tab-st').classList.toggle('on', view === 'st');
-  $('bar').classList.remove('hide');
-  view === 'pkg' ? renderPkg() : renderSt();
+// ===== จ่ายเงิน: ยอด + บัญชี + QR + อัปสลิป =====
+let payPkgs = [];      // แพ็กที่กำลังจ่าย
+let slipB64 = '';      // รูปสลิป (ย่อแล้ว, base64 ไม่มีหัว)
+let slipPrev = '';     // รูปตัวอย่าง (data URL)
+let payResult = null;  // ผลหลังส่งสลิป { result, until, reason }
+
+function renderPay() {
+  const total = cartTotal(payPkgs);
+  let h = '';
+  if (payResult) {
+    const r = payResult;
+    h = r.result === 'ok'
+      ? `<div class="note result"><div class="big">✅</div><p><b>ชำระเงินเรียบร้อย</b><br>${esc(r.until || '')}</p><p class="muted">ขอบคุณครับ 🙏</p></div>`
+      : r.result === 'reject'
+      ? `<div class="note result"><div class="big">⚠️</div><p><b>ตรวจสลิปไม่ผ่าน</b><br>${esc(r.reason || '')}</p><p class="muted">ตรวจสอบแล้วส่งสลิปใหม่ หรือทักแอดมินในแชต</p></div>`
+      : `<div class="note result"><div class="big">🧾</div><p><b>ได้รับสลิปแล้ว กำลังตรวจสอบ</b>${S.slipHours ? '<br><span class="muted">' + esc(S.slipHours) + '</span>' : ''}</p>
+         <p class="muted">ตรวจเสร็จ ระบบแจ้งในแชต LINE · ดูผลได้ที่แท็บ "สถานะ"</p></div>`;
+    $('main').innerHTML = h;
+    $('barIn').innerHTML = r.result === 'reject'
+      ? `<button class="cta" onclick="retrySlip()">ส่งสลิปใหม่</button>`
+      : `<button class="cta" onclick="payResult = null; go('status')">ดูสถานะ</button>`;
+    return;
+  }
+  h += `<div class="note amount"><div class="muted">ยอดที่ต้องโอน</div><div class="big">฿${total.toLocaleString()}</div>
+        <div class="muted">${isBundle(payPkgs) && S.bundlePrice ? 'เหมาทุกสาย (ปกติ ฿' + fullPrice(payPkgs) + ')' : payPkgs.map(k => esc(S.packages[k].name)).join(' + ')} · ต่อ 30 วัน</div></div>`;
+  h += `<div class="note"><b>1. โอนเข้าบัญชีนี้</b>
+        ${S.bankText ? `<div class="bank"><span class="txt" id="bankTxt">${esc(S.bankText)}</span><button class="mini" onclick="copyBank()">คัดลอก</button></div>`
+                     : '<div class="muted" style="margin-top:6px">แอดมินยังไม่ได้ตั้งบัญชี ทักแอดมินในแชตได้เลย</div>'}
+        ${S.qrUrl ? `<img class="qr" src="${esc(S.qrUrl)}" alt="QR พร้อมเพย์">` : ''}
+        <div class="muted" style="margin-top:8px">โอนยอดให้ตรง ฿${total.toLocaleString()} เพื่อให้ระบบตรวจสลิปได้อัตโนมัติ</div></div>`;
+  h += `<div class="note"><b>2. แนบสลิป</b><div class="muted">ระบบตรวจสลิปให้อัตโนมัติ ผ่านแล้วใช้งานได้ทันที</div></div>`;
+  h += slipPrev
+    ? `<img class="prev" src="${slipPrev}" alt="สลิป"><div style="text-align:center;margin-bottom:14px"><button class="link" onclick="$('slipIn').click()">เปลี่ยนรูป</button></div>`
+    : `<button class="drop" onclick="$('slipIn').click()"><div class="ic">📎</div><b>แตะเพื่อเลือกรูปสลิป</b><div class="muted">จากคลังรูป หรือถ่ายรูป</div></button>`;
+  h += `<p class="muted" style="text-align:center">ส่งสลิปในแชต LINE ก็ได้เหมือนกัน · <a class="link" onclick="go('pkg')">เปลี่ยนสาย</a></p>`;
+  $('main').innerHTML = h;
+  $('barIn').innerHTML = `<div class="sum">ยอดโอน<b>฿${total.toLocaleString()}</b></div>
+    <button class="cta" onclick="sendSlip()" ${slipB64 ? '' : 'disabled'}>${slipB64 ? 'ส่งสลิป' : 'แนบสลิปก่อนนะ'}</button>`;
 }
-function go(v) { view = v; render(); window.scrollTo(0, 0); }
+function retrySlip() { payResult = null; slipB64 = ''; slipPrev = ''; renderPay(); }
+async function copyBank() {
+  const t = S.bankText || '';
+  try { await navigator.clipboard.writeText(t); toast('คัดลอกแล้ว ✅'); }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($('bankTxt'));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('กดค้างที่ข้อความเพื่อคัดลอก');
+  }
+}
+// ย่อรูปสลิป (ด้านยาวไม่เกิน 1600px, JPEG) ให้ส่งเร็ว แต่ยังอ่าน QR ได้
+function gotSlip(inp) {
+  const f = inp.files && inp.files[0]; inp.value = '';
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { toast('เลือกไฟล์รูปภาพนะ'); return; }
+  const url = URL.createObjectURL(f), img = new Image();
+  img.onload = () => {
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+    slipPrev = c.toDataURL('image/jpeg', 0.88); slipB64 = slipPrev.split(',')[1];
+    URL.revokeObjectURL(url); renderPay();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('เปิดรูปนี้ไม่ได้ ลองรูปอื่น'); };
+  img.src = url;
+}
+function sendSlip() {
+  if (!slipB64) return;
+  run(async () => {
+    const r = await api('slip', { pkgs: payPkgs, image: slipB64 });
+    if (r.state) { S = r.state; resetFromState(); }
+    if (!r.ok) { toast(r.error === 'need_consent' ? 'ติ๊กยอมรับนโยบายก่อนนะ' : 'ส่งไม่ได้ ลองใหม่อีกครั้ง'); render(); return; }
+    payResult = r.slip; slipB64 = ''; slipPrev = '';
+    render(); window.scrollTo(0, 0);
+  });
+}
+
+// ===== สถานะของฉัน =====
+const PAY_LABEL = { ok: 'ผ่าน', wait: 'รอตรวจ', reject: 'ไม่ผ่าน' };
+function renderStatus() {
+  let h = '';
+  const roleTxt = S.role ? ` · ${esc(S.role)}` : '';
+  h += `<div class="note"><b>${esc(S.name || 'สมาชิก')}</b><div class="muted">ใช้มาแล้ว ${S.joinedDays || 0} วัน${roleTxt}</div></div>`;
+  const rows = [];
+  if (S.trial) rows.push(`<div><span>ทดลองฟรี · ${esc(S.packages[S.trial.pkg].name)}</span><span>${S.trial.active
+      ? `<span class="pill wait">เหลือ ${S.trial.daysLeft} วัน</span>` : '<span class="pill reject">หมดแล้ว</span>'}</span></div>`);
+  Object.keys(S.paid).sort().forEach(k => rows.push(`<div><span>${esc(S.packages[k].name)}</span><span>${S.paid[k].active
+      ? `<span class="pill ok">ถึง ${esc(S.paid[k].until)}</span>` : '<span class="pill reject">หมดอายุ</span>'}</span></div>`));
+  h += `<div class="note"><b>แพ็กของฉัน</b>${rows.length ? `<div class="kv" style="margin-top:6px">${rows.join('')}</div>`
+        : '<div class="muted" style="margin-top:6px">ยังไม่มีแพ็ก</div>'}</div>`;
+  if (S.active.length) {
+    const act = S.stationList.filter(s => S.stations.includes(s.c) && S.active.includes(s.p));
+    const shown = S.trialCap ? act.filter(s => s.p !== S.trialCap).concat(act.filter(s => s.p === S.trialCap).slice(0, S.trialMax)) : act;
+    h += `<div class="note"><b>สถานีที่รับห้อง (${shown.length})</b>
+          ${shown.length ? `<div class="stchips">${shown.map(s => `<span class="chip">${esc(s.n)}</span>`).join('')}</div>`
+                         : '<div class="muted" style="margin-top:6px">ยังไม่ได้เลือกสถานี</div>'}
+          <div class="muted" style="margin-top:10px">⏰ ส่งห้องวันละ 5 รอบ: ${esc(S.sendTimes || '')}</div></div>`;
+  } else {
+    h += `<div class="note gift">⏸ ตอนนี้หยุดส่งห้อง — ต่ออายุเพื่อรับห้องต่อ</div>`;
+  }
+  const pays = S.payments || [];
+  if (pays.length) {
+    h += `<div class="note"><b>ประวัติการจ่ายเงิน</b><div class="kv" style="margin-top:6px">${pays.map(p =>
+      `<div><span>${esc(p.date)} · ${esc(p.pkgs)} · ฿${p.amount}</span><span><span class="pill ${p.status}">${PAY_LABEL[p.status]}</span></span></div>`).join('')}</div></div>`;
+  }
+  h += `<p class="muted" style="text-align:center">มีคำถาม? ทักแอดมินในแชต LINE ได้เลย</p>`;
+  $('main').innerHTML = h;
+  $('barIn').innerHTML = S.active.length
+    ? `<button class="cta" style="background:var(--brand);box-shadow:none" onclick="go('st')">เลือกสถานี</button><button class="cta" onclick="go('pkg')">${isNew() ? 'เริ่มทดลอง' : 'ต่ออายุ'}</button>`
+    : `<button class="cta" onclick="go('pkg')">${isNew() ? 'เริ่มทดลองฟรี' : 'ต่ออายุ'}</button>`;
+}
+
+function render() {
+  $('tab-pkg').classList.toggle('on', view === 'pkg' || view === 'pay');
+  $('tab-st').classList.toggle('on', view === 'st');
+  $('tab-status').classList.toggle('on', view === 'status');
+  $('bar').classList.remove('hide');
+  ({ pkg: renderPkg, st: renderSt, status: renderStatus, pay: renderPay })[view]();
+}
+function go(v) { if (v !== 'pay') payResult = null; view = v; render(); window.scrollTo(0, 0); }
 
 function resetFromState() {
   const act = S.active;
@@ -570,9 +706,8 @@ function confirmPay() {
     const r = await api('cart', { pkgs: pick });
     if (r.state) S = r.state;
     if (!r.ok) { toast('ทำรายการไม่ได้ ลองใหม่'); render(); return; }
-    const total = cartTotal(pick);
-    await sayAndClose('ยืนยันจ่าย ' + total + ' บาท', 'กลับไปที่แชต แล้วพิมพ์ "ยืนยันจ่าย" เพื่อดูเลขบัญชี');
-    render();
+    payPkgs = pick.slice(); payResult = null;
+    go('pay');
   });
 }
 function saveSt() {
@@ -589,12 +724,18 @@ function fail(msg) {
   $('bar').classList.add('hide');
 }
 
-// เปิดหน้าเว็บที่แท็บ "เลือกสาย" เสมอ (เจ้าของสั่ง 24 พ.ย.) — ลิงก์ ?tab=stations จาก rich menu ก็เปิดที่ "เลือกสาย" ก่อน
-function wantedTab() { return 'pkg'; }
+// เปิดหน้าเว็บที่แท็บ "เลือกสาย" (เจ้าของสั่ง 24 พ.ย.) ยกเว้นปุ่มเมนู "สถานะของฉัน" (?tab=status) เปิดแท็บสถานะ
+// ตอนเปิดครั้งแรก LINE ห่อพารามิเตอร์ไว้ใน ?liff.state=%3Ftab%3D...
+function wantedTab() {
+  const q = new URLSearchParams(location.search);
+  let t = q.get('tab');
+  if (!t && q.get('liff.state')) { try { t = new URLSearchParams(q.get('liff.state').replace(/^[^?]*\?/, '')).get('tab'); } catch (e) {} }
+  return t === 'status' ? 'status' : 'pkg';
+}
 
 (async function start() {
   view = wantedTab();
-  $('tab-pkg').classList.toggle('on', view === 'pkg'); $('tab-st').classList.toggle('on', view === 'st');
+  $('tab-pkg').classList.toggle('on', view === 'pkg'); $('tab-status').classList.toggle('on', view === 'status');
   try {
     await liff.init({ liffId: CONFIG.LIFF_ID });
     view = wantedTab();   // หลัง init LINE เปลี่ยน URL กลับเป็น ?tab=... แล้ว
