@@ -16,8 +16,6 @@
     --accent: #EE6A12; --accent-dark: #C9540A; --accent-soft: #FFF1E4; --accent-light: #F6B26B;
     --ink: #111827; --ink-2: #4B5563; --ink-3: #9CA3AF; --line: #E5E7EB;
     --bg: #F6F4F8; --card: #FFFFFF; --danger: #DC2626;
-    --A: #0EA5A4; --B: #8B5CF6; --C: #F59E0B; --D: #3B82F6;
-    --MA: #0891B2; --MB: #DB2777; --MC: #1E4FA1; --MD: #65A30D;   /* MRT สายสีน้ำเงิน แบ่ง 4 สาย */
     --radius: 18px; --shadow: 0 1px 2px rgba(17,24,39,.04), 0 6px 18px rgba(17,24,39,.06);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -101,13 +99,18 @@
   .line.locked .lock { padding: 12px 16px 14px; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
   .line.locked .lock button { margin-left: auto; color: var(--brand-dark); font-weight: 600; font-size: 13px; }
 
-  /* ติ๊กเลือกระบบ BTS / MRT (24 พ.ย.) */
-  .sys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-  .sys button { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 14px; padding: 12px 14px;
-                box-shadow: var(--shadow); border: 2px solid transparent; text-align: left; }
-  .sys button.sel { border-color: var(--brand); background: var(--brand-soft); }
-  .sys .t { font-weight: 700; font-size: 16px; }
-  .sys .s { font-size: 12px; color: var(--ink-3); }
+  /* เลือกสาย + ค้นหาสถานี (27 พ.ย.) — สีสายมาจากข้อมูล (LINES.color) */
+  .linepick { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
+  .linepick select, .linepick input { font: inherit; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--line);
+                                      background: var(--card); box-shadow: var(--shadow); outline: none; width: 100%; }
+  .linepick select { font-weight: 700; color: var(--brand-dark); }
+  .linepick select:focus, .linepick input:focus { border-color: var(--brand); }
+  .grp { padding: 8px 16px 4px; font-size: 12px; font-weight: 700; color: var(--ink-3); background: #FAFAFB; border-top: 1px solid #F3F4F6; }
+  .shared { font-size: 11px; color: #B45309; background: #FFF4D6; border-radius: 999px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+  .st.lock .sw { opacity: .55; }
+  .dotc { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .renew { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: 600; color: var(--ink); }
+  .renew input { width: 20px; height: 20px; accent-color: var(--brand); }
 
   .empty { text-align: center; padding: 40px 20px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
   .empty .big { font-size: 40px; }
@@ -194,11 +197,11 @@
 <header class="top">
   <div class="brand">
     <div class="logo"><img src="icon-192.png" alt="พรายกระซิบ"></div>
-    <div><h1>พรายกระซิบ</h1><p id="hello">ห้องเช่าจากเจ้าของโดยตรง ตามสถานี BTS · MRT</p></div>
+    <div><h1>พรายกระซิบ</h1><p id="hello">ห้องเช่าจากเจ้าของโดยตรง ตามสถานีรถไฟฟ้า</p></div>
   </div>
   <nav class="tabs" role="tablist">
-    <button id="tab-pkg" role="tab" onclick="go('pkg')">เลือกสาย</button>
-    <button id="tab-st" role="tab" onclick="go('st')">เลือกสถานี</button>
+    <button id="tab-pkg" role="tab" onclick="go('pkg')">แพ็กเกจ</button>
+    <button id="tab-pay" role="tab" onclick="go('pay')">ชำระเงิน</button>
     <button id="tab-status" role="tab" onclick="go('status')">สถานะ</button>
   </nav>
 </header>
@@ -333,17 +336,18 @@ const CONFIG = {
 };
 
 let S = null;          // สถานะจากเซิร์ฟเวอร์
-let view = 'pkg';
-let pick = [];         // แพ็กที่เลือก (ทดลอง = 1 อัน / จ่าย = หลายอัน)
-let picked = new Set(); // สถานีที่ติ๊กอยู่ (ยังไม่บันทึก)
+let view = 'pkg';      // pkg | pay | status
+let line = '';         // สายที่กำลังดูในแท็บแพ็กเกจ
+let q = '';            // คำค้นสถานี
+let sel = new Set();   // สถานีที่ติ๊ก (รวมที่จ่ายแล้ว)
 let busy = false;
 let agree = false;     // ติ๊กยอมรับประกาศความเป็นส่วนตัวในหน้านี้แล้ว (ยังไม่บันทึก)
 let expPick = '';      // อายุงานที่เลือก / พิมพ์
 let expOther = false;  // เปิดช่องพิมพ์เอง
 let rolePick = '';     // "คุณคือ" ที่เลือก (ยังไม่บันทึก)
 let roleEdit = false;  // กำลังแก้ "คุณคือ" ในแท็บสถานะ
-let trialSt = new Set(); // สถานีที่เลือกตอนเริ่มทดลอง (ไม่เกิน S.trialMax)
-let sys = 'BTS';       // ระบบที่กำลังดู (ติ๊ก BTS / MRT ด้านบนแท็บเลือกสาย + เลือกสถานี)
+let renewPick = false; // กด "ต่ออายุ" ในแท็บแพ็กเกจ
+let payQuote = null;   // ผลคิดราคาจากเซิร์ฟเวอร์ { mode, amount, until, codes, renew }
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -360,6 +364,38 @@ async function api(action, extra) {
   return res.json();
 }
 
+// ===== ราคา — ต้องตรงกับ setPrice_ / quote_ ใน line_members.gs (เทสต์: test_price_js.js) =====
+/* PRICE */
+const lineOf = c => { const s = S.stationList.find(x => x.c === c); return s ? s.l : ''; };
+const byLine = codes => codes.reduce((o, c) => { const l = lineOf(c); if (l) o[l] = (o[l] || 0) + 1; return o; }, {});
+function setPrice(codes) {
+  const p = S.price, bl = byLine(codes);
+  return Object.keys(bl).reduce((s, l) => s + p.base + p.extra * Math.max(0, bl[l] - p.incl), 0);
+}
+// owned = สถานีที่จ่ายแล้วและยังไม่หมด / want = ชุดที่อยากได้ทั้งหมด
+function localQuote(owned, want, renew) {
+  const p = S.price;
+  if (!want.length) return { ok: false, error: 'empty' };
+  if (owned.some(c => !want.includes(c))) return { ok: false, error: 'cannot_remove' };
+  if (!owned.length) return { ok: true, mode: 'new', amount: setPrice(want) };
+  const ownLines = Object.keys(byLine(owned));
+  const newLine = Object.keys(byLine(want)).some(l => !ownLines.includes(l));
+  if (renew || newLine) return { ok: true, mode: 'renew', amount: setPrice(want) };
+  if (want.length === owned.length) return { ok: false, error: 'nothing' };
+  const diff = setPrice(want) - setPrice(owned);
+  if (diff === 0) return { ok: true, mode: 'free', amount: 0 };
+  if (diff / p.extra < p.minAdd) return { ok: false, error: 'min_add' };
+  return { ok: true, mode: 'add', amount: diff };
+}
+/* /PRICE */
+const SHARED = { BL15: 'YL01', YL01: 'BL15', BL10: 'PP16', PP16: 'BL10', E15: 'YL23', YL23: 'E15', BL34: 'S12', S12: 'BL34', S7: 'G1', G1: 'S7' };
+const isNew = () => !S.trialUsed && !S.paid;
+const paidOn = () => !!(S.paid && S.paid.active);
+const owned = () => paidOn() ? S.owned : [];
+const stOf = l => S.stationList.filter(s => s.l === l);
+const nameOf = c => (S.stationList.find(s => s.c === c) || { n: c }).n;
+const want = () => S.stationList.map(s => s.c).filter(c => sel.has(c));   // เรียงตามสาย
+
 // ===== PDPA =====
 const canSave = () => S.consent || agree;
 function openPolicy() { $('policy').classList.remove('hide'); document.body.style.overflow = 'hidden'; }
@@ -374,7 +410,7 @@ function consentBlock() {
         เพื่อส่งห้องให้ตรงสถานีที่คุณเลือก เราขอเก็บ:<br>
         • ชื่อ LINE<br>
         • คุณเป็นใคร (เอเจนต์ / เจ้าของห้อง / หาห้องเช่า)<br>
-        • สาย BTS / MRT และสถานีที่เลือก<br>
+        • สายรถไฟฟ้าและสถานีที่เลือก<br>
         • ระยะเวลาการทำงานเป็นเอเจนต์ (ถ้ากรอก)<br>
         • สลิปโอนเงิน (ไว้ตรวจยอด เก็บใน Google Drive)<br>
         <span class="muted">เก็บตลอดที่เป็นสมาชิก และอีก 1 ปีหลังเลิกใช้ · สลิปเก็บ 5 ปีตามกฎหมายบัญชี</span><br>
@@ -409,7 +445,7 @@ function saveExp() {
   });
 }
 
-// ===== คุณคือ (เอเจนต์ / เจ้าของห้อง / หาห้องเช่า) =====
+// ===== คุณคือ (เอเจนต์ / เจ้าของห้อง / หาห้องเช่า) — เก็บเป็นข้อมูล แก้ได้ที่แท็บสถานะ =====
 const curRole = () => rolePick || S.role || '';
 const isAgent = () => !curRole() || curRole() === (S.roleOptions || [])[0];
 function roleBlock(saveNow) {
@@ -425,8 +461,7 @@ function pickRole(o, saveNow) {
   if (!saveNow) return render();
   saveRole(o);
 }
-// บันทึก "คุณคือ" — ขึ้นกล่องยืนยันก่อนทุกครั้ง
-function saveRole(o) {
+function saveRole(o) {   // ขึ้นกล่องยืนยันก่อนทุกครั้ง
   if (!o || o === S.role) { roleEdit = false; rolePick = ''; return render(); }
   if (!canSave()) { toast('ติ๊ก "ขออนุญาตเก็บข้อมูล" ก่อนนะ'); return render(); }
   askConfirm(S.role ? 'เปลี่ยน "คุณคือ"' : 'ยืนยัน "คุณคือ"',
@@ -450,25 +485,7 @@ function askConfirm(title, html, okLabel, fn) {
 }
 function closeConfirm() { confirmFn = null; $('confirmBox').classList.add('hide'); document.body.style.overflow = ''; }
 
-// ===== ทดลอง: เลือกสถานีในสายที่เลือก ไม่เกิน S.trialMax =====
-function trialStBlock() {
-  if (!pick.length) return '';
-  const k = pick[0], st = stationsOf(k), max = S.trialMax || 3;
-  return `<section class="line" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
-      <div><div class="t">เลือกสถานี ${esc(S.packages[k].name)}</div><div class="s">ช่วงทดลองเลือกได้ ${max} สถานี · เลือกแล้ว ${trialSt.size}/${max}</div></div></div>
-      ${st.map(s => `<button class="st ${trialSt.has(s.c) ? 'on' : ''}" onclick="togTrialSt('${s.c}')" aria-pressed="${trialSt.has(s.c)}">
-          <span class="nm">${esc(s.n)}</span><span class="cd">${esc(s.c)}</span><span class="sw"></span></button>`).join('')}
-    </section>`;
-}
-function togTrialSt(c) {
-  const max = S.trialMax || 3;
-  if (trialSt.has(c)) trialSt.delete(c);
-  else if (trialSt.size >= max) { toast(`ช่วงทดลองเลือกได้ ${max} สถานี เอาอันเดิมออกก่อนนะ`); return; }
-  else trialSt.add(c);
-  renderPkg();
-}
-
-// ส่งข้อความในแชตแทนลูกค้า → บอทตอบกลับ (ฟรี) แล้วปิดหน้า
+// ส่งข้อความในแชตแทนลูกค้า → พรายตอบกลับ (ฟรี) แล้วปิดหน้า
 async function sayAndClose(text, fallback) {
   try {
     if (liff.isInClient() && liff.getContext() && liff.getContext().type !== 'none') {
@@ -480,145 +497,137 @@ async function sayAndClose(text, fallback) {
   toast(fallback, 6000);
 }
 
-const isNew = () => !S.trialUsed && !Object.keys(S.paid).length;
-// เหมา (ต้องตรงกับ cartTotal_ ใน line_members.gs): ครบ 4 สายของระบบเดียวกัน = S.bundlePrice (599)
-//   ครบทั้ง BTS + MRT = S.allPrice (999) / ระบบที่ไม่ครบ คิดราคาตามสาย
-const SYS = () => S.systems || ['BTS'];
-const sysOf = k => S.packages[k].sys || 'BTS';
-const pkgsOf = x => Object.keys(S.packages).filter(k => sysOf(k) === x);
-const fullPrice = ks => ks.reduce((s, k) => s + S.packages[k].price, 0);
-const bundleSys = ks => SYS().filter(x => pkgsOf(x).length && pkgsOf(x).every(k => ks.includes(k)));
-const isBundle = ks => !!S.bundlePrice && bundleSys(ks).length > 0;
-const cartTotal = ks => {
-  if (!S.bundlePrice) return fullPrice(ks);
-  const full = bundleSys(ks);
-  if (S.allPrice && SYS().length > 1 && full.length === SYS().length) return S.allPrice;
-  return SYS().reduce((s, x) => s + (full.includes(x) ? S.bundlePrice : fullPrice(ks.filter(k => sysOf(k) === x))), 0);
+// ===== แท็บแพ็กเกจ: เลือกสาย → ติ๊กสถานี → ราคาขึ้นทันที =====
+const ERR = {
+  empty: 'ติ๊กสถานีอย่างน้อย 1 สถานี',
+  cannot_remove: 'สถานีที่จ่ายแล้วเอาออกไม่ได้',
+  nothing: 'ติ๊กสถานีเพิ่ม หรือกด "ต่ออายุ"',
+  min_add: () => `ซื้อเพิ่มขั้นต่ำ ${S.price.minAdd} สถานี`,
+  trial_used: 'คุณใช้สิทธิ์ทดลองไปแล้ว',
+  bad_codes: 'เลือกสถานีไม่ถูกต้อง ลองใหม่',
+  not_free: 'รายการนี้ต้องชำระเงิน',
 };
-const cartLabel = ks => {
-  const full = isBundle(ks) ? bundleSys(ks) : [];
-  if (SYS().length > 1 && full.length === SYS().length && S.allPrice) return 'เหมาทุกสาย BTS + MRT';
-  return full.map(x => 'เหมาทุกสาย ' + x).concat(ks.filter(k => !full.includes(sysOf(k))).map(k => S.packages[k].name)).join(' + ');
-};
-const stationsOf = k => S.stationList.filter(s => s.p === k);
-
-// ติ๊กเลือกระบบ BTS / MRT (แสดงเฉพาะสายของระบบที่เลือก) — n = ตัวเลขเล็กใต้ชื่อ
-function sysBlock(sub) {
-  if (SYS().length < 2) return '';
-  return `<div class="sys">${SYS().map(x => `<button class="${x === sys ? 'sel' : ''}" onclick="setSys('${x}')" aria-pressed="${x === sys}">
-      <span class="tick box"></span><div><div class="t">${x}</div><div class="s">${esc(sub(x))}</div></div></button>`).join('')}</div>`;
+const errText = e => (typeof ERR[e] === 'function' ? ERR[e]() : ERR[e]) || 'ทำรายการไม่ได้ ลองใหม่';
+function trialOk() {   // ทดลอง: 1 สาย ไม่เกิน trialMax
+  const w = want(), ls = Object.keys(byLine(w));
+  return w.length > 0 && w.length <= S.trialMax && ls.length === 1;
 }
-function setSys(x) { sys = x; render(); }
-
-function pkgStatus(k) {
-  const p = S.paid[k];
-  if (p && p.active) return `<span class="badge on">ใช้อยู่ · ถึง ${esc(p.until)}</span>`;
-  if (S.trial && S.trial.pkg === k && S.trial.active) return `<span class="badge trial">ทดลองฟรี · เหลือ ${S.trial.daysLeft} วัน</span>`;
-  if (p || (S.trial && S.trial.pkg === k)) return `<span class="badge off">หมดอายุ</span>`;
-  return '';
+function lineBox() {
+  const counts = byLine(want());
+  return `<div class="linepick">
+      <select id="lineSel" onchange="setLine(this.value)" aria-label="เลือกสาย">
+        ${Object.keys(S.lines).map(l => `<option value="${l}" ${l === line ? 'selected' : ''}>${esc(S.lines[l].name)}${counts[l] ? ` · เลือก ${counts[l]}` : ''}</option>`).join('')}
+      </select>
+      <input id="qIn" type="search" placeholder="🔍 ค้นหาสถานี" value="${esc(q)}" oninput="q = this.value.trim(); renderList()">
+    </div>`;
 }
-
+function setLine(l) { line = l; q = ''; renderPkg(); }
+function stationRows() {
+  const own = owned(), c = S.lines[line].color;
+  let rows = stOf(line), last = null, h = '';
+  if (q) rows = rows.filter(s => s.n.includes(q) || s.c.toLowerCase().includes(q.toLowerCase()));
+  if (!rows.length) return `<div class="muted" style="padding:14px 16px">ไม่พบสถานี "${esc(q)}"</div>`;
+  rows.forEach(s => {
+    if (s.g && s.g !== last && !q) { h += `<div class="grp">${esc(s.g)}</div>`; last = s.g; }
+    const on = sel.has(s.c), lock = own.includes(s.c), sh = SHARED[s.c];
+    h += `<button class="st ${on ? 'on' : ''} ${lock ? 'lock' : ''}" style="--c:${c}" onclick="togSt('${s.c}')" aria-pressed="${on}">
+        <span class="nm">${esc(s.n)}</span>${sh ? `<span class="shared">สถานีร่วม ${esc(S.lines[lineOf(sh)].name)}</span>` : ''}
+        ${lock ? '<span class="cd">🔒 จ่ายแล้ว</span>' : ''}<span class="sw"></span></button>`;
+  });
+  return h;
+}
+function renderList() { const el = $('stList'); if (el) el.innerHTML = stationRows(); }
+function summaryBlock() {
+  const w = want(), bl = byLine(w), p = S.price;
+  if (!w.length) return '';
+  const rows = Object.keys(S.lines).filter(l => bl[l]).map(l => {
+    const n = bl[l], price = p.base + p.extra * Math.max(0, n - p.incl);
+    return `<div><span><span class="dotc" style="background:${S.lines[l].color}"></span>${esc(S.lines[l].name)} · ${n} สถานี</span><span>฿${price}</span></div>`;
+  });
+  return `<div class="note"><b>สรุปที่เลือก</b><div class="kv" style="margin-top:6px">${rows.join('')}</div>
+    <div class="muted" style="margin-top:8px">สายละ ฿${p.base} ได้ ${p.incl} สถานี · เกินสถานีละ ฿${p.extra}</div></div>`;
+}
 function renderPkg() {
   const trialMode = isNew();
   let h = '';
   if (trialMode) {
-    h += `<div class="note gift">🎁 <b>ทดลองฟรี 7 วัน</b><br>เลือกได้ 1 สาย ไม่เกิน ${S.trialMax || 3} สถานี · จ่ายแล้วได้ทั้งสาย</div>`;
+    h += `<div class="note gift">🎁 <b>ทดลองฟรี 7 วัน</b> เลือกได้ 1 สาย ไม่เกิน ${S.trialMax} สถานี<br>
+          <span class="muted">ใช้ต่อ สายละ ฿${S.price.base} ได้ ${S.price.incl} สถานี / 30 วัน</span></div>`;
     h += roleBlock(false);
+  } else if (paidOn()) {
+    h += `<div class="note"><b>แพ็กเกจของคุณ ใช้ได้ถึง ${esc(S.paid.until)}</b>
+          <div class="muted">ติ๊กสถานีเพิ่มได้ (สถานีที่จ่ายแล้วเอาออกไม่ได้)</div>
+          <div class="muted" style="margin-top:4px">ℹ️ ซื้อเพิ่มจะหมดอายุพร้อมแพ็กเกจหลัก (ถึง ${esc(S.paid.until)}) · ขั้นต่ำ ${S.price.minAdd} สถานี · เพิ่มสายใหม่ = ต่ออายุทั้งชุด +30 วัน</div>
+          <label class="renew"><input type="checkbox" ${renewPick ? 'checked' : ''} onchange="renewPick = this.checked; renderPkg()"> ต่ออายุ 30 วัน (ถึงวันใหม่ต่อจาก ${esc(S.paid.until)})</label></div>`;
   } else {
-    const lines = [];
-    if (S.trial) lines.push(`<div><span>ทดลอง ${esc(S.packages[S.trial.pkg].name)}</span><span>${S.trial.active ? 'ถึง ' + esc(S.trial.until) : 'หมดแล้ว'}</span></div>`);
-    Object.keys(S.paid).sort().forEach(k => lines.push(`<div><span>${esc(S.packages[k].name)}</span><span>${S.paid[k].active ? 'ถึง ' + esc(S.paid[k].until) : 'หมดอายุ'}</span></div>`));
-    h += `<div class="note"><b>จ่ายค่าบริการ (ต่อ 30 วัน)</b><div class="muted">เลือกได้หลายสาย จ่ายรวมทีเดียว · แพ็กที่ใช้อยู่ จะต่อจากวันหมดเดิม</div>
-          ${lines.length ? '<div class="rows" style="margin-top:8px">' + lines.join('') + '</div>' : ''}</div>`;
+    h += `<div class="note"><b>เลือกสายและสถานีที่อยากได้ห้อง</b>
+          <div class="muted">สายละ ฿${S.price.base} ได้ ${S.price.incl} สถานี · เกินสถานีละ ฿${S.price.extra} · ใช้ได้ 30 วัน</div>
+          ${S.trial && S.trial.active ? `<div class="muted" style="margin-top:4px">ทดลองอยู่ถึง ${esc(S.trial.until)} — ซื้อสายเดิมจะนับต่อจากวันหมดทดลอง</div>` : ''}</div>`;
   }
-  h += sysBlock(x => { const n = pick.filter(k => sysOf(k) === x).length; return n ? `เลือก ${n} สาย` : `${pkgsOf(x).length} สาย`; });
-  pkgsOf(sys).forEach(k => {
-    const P = S.packages[k], st = stationsOf(k), on = pick.includes(k);
-    const chips = st.slice(0, 5).map(s => `<span class="chip">${esc(s.n)}</span>`).join('') +
-                  (st.length > 5 ? `<span class="chip">+${st.length - 5}</span>` : '');
-    h += `<button class="pkg ${on ? 'sel' : ''}" style="--c:var(--${k})" onclick="togglePkg('${k}')">
-      <div class="row1">
-        <span class="tick ${trialMode ? '' : 'box'}"></span>
-        <div><div class="name">${esc(P.name)}</div><div class="range">${esc(P.range)}</div>${trialMode ? '' : pkgStatus(k)}</div>
-        <div class="price">${trialMode ? '<b>ฟรี</b><span>7 วัน · ต่อไป ฿' + P.price + '/ด.</span>' : '<b>฿' + P.price + '</b><span>/ 30 วัน</span>'}</div>
-      </div>
-      <div class="chips">${chips}</div>
-    </button>`;
-    if (trialMode && on) h += trialStBlock();   // เลือกสถานีต่อใต้สายที่เลือกเลย
-  });
-  if (!trialMode && S.bundlePrice) {
-    const ks = pkgsOf(sys), n = ks.length, full = fullPrice(ks), left = ks.filter(k => !pick.includes(k));
-    h += !left.length
-      ? `<div class="note gift">🎉 <b>เหมาทุกสาย ${sys} ครบ ${n} สาย เหลือ ฿${S.bundlePrice}</b> <span class="muted">(ปกติ ฿${full} ประหยัด ฿${full - S.bundlePrice})</span></div>`
-      : `<div class="note gift">💡 เลือก ${sys} ครบ ${n} สาย จ่ายแค่ <b>฿${S.bundlePrice}</b> <span class="muted">(ปกติ ฿${full})</span>${left.length < n ? `<br><span class="muted">อีก ${left.length} สายก็ครบ</span>` : ''}
-         <div style="margin-top:8px"><button class="mini" onclick="pickAll()">เลือก ${sys} ครบ ${n} สาย</button></div></div>`;
-    if (S.allPrice && SYS().length > 1) {
-      const all = Object.keys(S.packages), allFull = fullPrice(all);
-      h += all.every(k => pick.includes(k))
-        ? `<div class="note gift">🎉 <b>เหมาทุกสาย BTS + MRT ครบ ${all.length} สาย เหลือ ฿${S.allPrice}</b> <span class="muted">(ปกติ ฿${allFull.toLocaleString()})</span></div>`
-        : `<div class="note gift">🚇 เอาทั้ง BTS + MRT ครบ ${all.length} สาย จ่ายแค่ <b>฿${S.allPrice}</b> <span class="muted">(ปกติ ฿${allFull.toLocaleString()})</span>
-           <div style="margin-top:8px"><button class="mini" onclick="pickEvery()">เลือกครบทั้ง ${all.length} สาย</button></div></div>`;
-    }
-  }
+  h += lineBox();
+  h += `<section class="line"><div id="stList">${stationRows()}</div></section>`;
+  h += `<div id="sumBox">${summaryBlock()}</div>`;
   if (!trialMode && !S.role) h += roleBlock(true);
   h += (isAgent() ? expBlock(!trialMode) : '') + consentBlock();
   $('main').innerHTML = h;
-
-  const total = cartTotal(pick);
-  const ready = pick.length && canSave();
-  const trialReady = ready && curRole() && trialSt.size > 0;
-  $('barIn').innerHTML = trialMode
-    ? `<button class="cta" onclick="startTrial()" ${trialReady ? '' : 'disabled'}>${!curRole() ? 'เลือก "คุณคือ" ด้านบนก่อนนะ'
-        : !pick.length ? 'เลือก 1 สายเพื่อเริ่มทดลอง'
-        : !trialSt.size ? `เลือกสถานี (ไม่เกิน ${S.trialMax || 3})`
-        : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + trialSt.size + ' สถานี'}</button>`
-    : `<div class="sum">ยอดรวม${isBundle(pick) && S.bundlePrice ? ` <s>฿${fullPrice(pick).toLocaleString()}</s>` : ''}<b>฿${total.toLocaleString()}</b></div>
-       <button class="cta" onclick="confirmPay()" ${ready ? '' : 'disabled'}>${pick.length && !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'ไปหน้าจ่ายเงิน'}</button>`;
+  renderBar();
 }
-
-function renderSt() {
-  const act = S.active;
-  let h = '';
-  if (!act.length) {
-    h = `<div class="empty"><div class="big">🚉</div><p><b>ยังไม่มีแพ็กที่ใช้งานอยู่</b><br><span class="muted">เลือกแพ็กก่อน แล้วค่อยกลับมาเลือกสถานี</span></p>
-         <button class="cta" style="max-width:260px" onclick="go('pkg')">ไปเลือกแพ็กเกจ</button></div>`;
-    $('main').innerHTML = h; $('bar').classList.add('hide'); return;
+function renderBar() {
+  if (view !== 'pkg') return;
+  const w = want();
+  if (isNew()) {
+    const ok = trialOk() && curRole() && canSave();
+    const msg = !curRole() ? 'เลือก "คุณคือ" ด้านบนก่อนนะ' : !w.length ? `ติ๊กสถานี (ไม่เกิน ${S.trialMax})`
+      : !trialOk() ? `ทดลองได้ 1 สาย ไม่เกิน ${S.trialMax} สถานี` : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ' : 'เริ่มทดลองฟรี · ' + w.length + ' สถานี';
+    $('barIn').innerHTML = `<button class="cta" onclick="startTrial()" ${ok ? '' : 'disabled'}>${msg}</button>`;
+    return;
   }
-  if (!S.consent) h += consentBlock();
-  h += `<div class="note">ติ๊กสถานีที่อยากได้ห้อง · พรายส่งสรุปวันละ 5 รอบ (9 · 12 · 15 · 18 · 21 น.)</div>`;
-  h += sysBlock(x => { const n = act.filter(k => sysOf(k) === x).length; return n ? `ใช้อยู่ ${n} สาย` : 'ยังไม่ได้ใช้'; });
-  const order = pkgsOf(sys).sort((a, b) => (act.includes(b) - act.includes(a)));
-  order.forEach(k => {
-    const P = S.packages[k], st = stationsOf(k);
-    if (!act.includes(k)) {
-      h += `<section class="line locked" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
-            <div><div class="t">${esc(P.name)}</div><div class="s">${esc(P.range)}</div></div></div>
-            <div class="lock">🔒 ยังไม่ได้ใช้สายนี้ <button onclick="go('pkg')">สมัคร ฿${P.price}</button></div></section>`;
-      return;
-    }
-    const n = st.filter(s => picked.has(s.c)).length, all = n === st.length, capped = S.trialCap === k;
-    h += `<section class="line" style="--c:var(--${k})"><div class="line-head"><span class="dot"></span>
-          <div><div class="t">${esc(P.name)}</div><div class="s">${capped ? `ช่วงทดลอง เลือกได้ ${S.trialMax} สถานี · เลือกอยู่ ${n}/${S.trialMax}` : `เลือกอยู่ ${n}/${st.length} สถานี`}</div></div>
-          ${capped ? '' : `<button class="all" onclick="allOf('${k}', ${!all})">${all ? 'ล้างทั้งสาย' : 'เลือกทั้งสาย'}</button>`}</div>
-          ${st.map(s => `<button class="st ${picked.has(s.c) ? 'on' : ''}" onclick="togSt('${s.c}')" aria-pressed="${picked.has(s.c)}">
-              <span class="nm">${esc(s.n)}</span><span class="cd">${esc(s.c)}</span><span class="sw"></span></button>`).join('')}
-          </section>`;
+  const lq = localQuote(owned(), w, renewPick);
+  const label = !lq.ok ? errText(lq.error) : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ'
+    : lq.mode === 'free' ? 'บันทึก (ไม่มีค่าใช้จ่าย)' : 'ไปชำระเงิน';
+  $('barIn').innerHTML = `<div class="sum">${lq.ok ? (lq.mode === 'add' ? 'ซื้อเพิ่ม' : lq.mode === 'renew' ? 'ต่ออายุ' : lq.mode === 'free' ? 'เพิ่มฟรี' : 'ยอดรวม') : 'ยอดรวม'}<b>฿${(lq.ok ? lq.amount : 0).toLocaleString()}</b></div>
+    <button class="cta" onclick="${lq.ok && lq.mode === 'free' ? 'saveFree()' : 'toPay()'}" ${lq.ok && canSave() ? '' : 'disabled'}>${label}</button>`;
+}
+function togSt(c) {
+  if (owned().includes(c)) { toast('สถานีที่จ่ายแล้วเอาออกไม่ได้'); return; }
+  if (sel.has(c)) sel.delete(c);
+  else {
+    if (isNew() && want().length >= S.trialMax && Object.keys(byLine(want())).length) { toast(`ทดลองเลือกได้ ${S.trialMax} สถานี เอาอันเดิมออกก่อนนะ`); return; }
+    if (isNew() && want().some(x => lineOf(x) !== lineOf(c))) { toast('ทดลองได้ 1 สาย เอาสถานีสายเดิมออกก่อนนะ'); return; }
+    sel.add(c);
+  }
+  renderList(); renderBar(); renderPkgSummary();
+}
+function renderPkgSummary() {   // อัปเดตสรุป + ตัวนับในเมนูสาย โดยไม่ล้างช่องค้นหา
+  const el = $('lineSel');
+  if (el) { const counts = byLine(want()); [...el.options].forEach(o => { o.textContent = S.lines[o.value].name + (counts[o.value] ? ' · เลือก ' + counts[o.value] : ''); }); }
+  if ($('sumBox')) $('sumBox').innerHTML = summaryBlock();
+}
+function saveFree() {
+  run(async () => {
+    const r = await api('free', { codes: want() });
+    if (r.state) { S = r.state; resetFromState(); }
+    toast(r.ok ? 'บันทึกแล้ว ✅ รอบถัดไปได้ห้องตามนี้' : errText(r.error));
+    render();
   });
-  $('main').innerHTML = h;
-  const saved = new Set(S.stations.filter(c => { const s = S.stationList.find(x => x.c === c); return s && act.includes(s.p); }));
-  const changed = saved.size !== picked.size || [...picked].some(c => !saved.has(c));
-  $('barIn').innerHTML = `<div class="sum">เลือกไว้<b>${picked.size} สถานี</b></div>
-    <button class="cta" onclick="saveSt()" ${changed && canSave() ? '' : 'disabled'}>${!changed ? 'บันทึกแล้ว ✓' : canSave() ? 'บันทึก' : 'ติ๊ก "ตกลง" ด้านบนก่อนนะ'}</button>`;
+}
+function toPay() {
+  run(async () => {
+    const r = await api('cart', { codes: want(), renew: renewPick });
+    if (r.state) S = r.state;
+    if (!r.ok) { toast(errText(r.error)); render(); return; }
+    payQuote = Object.assign({ codes: want(), renew: r.quote.mode === 'renew' }, r.quote);
+    payResult = null;
+    go('pay');
+  });
 }
 
-// ===== จ่ายเงิน: ยอด + บัญชี + QR + อัปสลิป =====
-let payPkgs = [];      // แพ็กที่กำลังจ่าย
+// ===== แท็บชำระเงิน: ยอด + บัญชี + QR + อัปสลิป =====
 let slipB64 = '';      // รูปสลิป (ย่อแล้ว, base64 ไม่มีหัว)
 let slipPrev = '';     // รูปตัวอย่าง (data URL)
 let payResult = null;  // ผลหลังส่งสลิป { result, until, reason }
-
+const MODE_TXT = { new: 'ซื้อใหม่ 30 วัน', renew: 'ต่ออายุ +30 วัน', add: 'ซื้อสถานีเพิ่ม (หมดพร้อมแพ็กเกจหลัก)' };
 function renderPay() {
-  const total = cartTotal(payPkgs);
   let h = '';
   if (payResult) {
     const r = payResult;
@@ -634,8 +643,18 @@ function renderPay() {
       : `<button class="cta" onclick="payResult = null; go('status')">ดูสถานะ</button>`;
     return;
   }
+  if (!payQuote) {
+    $('main').innerHTML = `<div class="empty"><div class="big">🧾</div><p><b>ยังไม่มีรายการที่ต้องชำระ</b><br>
+      <span class="muted">เลือกสายและสถานีในแท็บแพ็กเกจก่อน</span></p>
+      <button class="cta" style="max-width:260px" onclick="go('pkg')">ไปเลือกแพ็กเกจ</button></div>`;
+    $('bar').classList.add('hide');
+    return;
+  }
+  const total = payQuote.amount, bl = byLine(payQuote.codes);
   h += `<div class="note amount"><div class="muted">ยอดที่ต้องโอน</div><div class="big">฿${total.toLocaleString()}</div>
-        <div class="muted">${esc(cartLabel(payPkgs))}${isBundle(payPkgs) ? ' (ปกติ ฿' + fullPrice(payPkgs).toLocaleString() + ')' : ''} · ต่อ 30 วัน</div></div>`;
+        <div class="muted">${esc(MODE_TXT[payQuote.mode] || '')} · ใช้ได้ถึง ${esc(payQuote.until || '')}</div>
+        <div class="stchips" style="justify-content:center">${Object.keys(S.lines).filter(l => bl[l]).map(l =>
+          `<span class="chip">${esc(S.lines[l].name)} ${bl[l]} สถานี</span>`).join('')}</div></div>`;
   h += `<div class="note"><b>1. โอนเข้าบัญชีนี้</b>
         ${S.bankText ? `<div class="bank"><span class="txt" id="bankTxt">${esc(S.bankText)}</span><button class="mini" onclick="copyBank()">คัดลอก</button></div>`
                      : '<div class="muted" style="margin-top:6px">แอดมินยังไม่ได้ตั้งบัญชี ทักแอดมินในแชตได้เลย</div>'}
@@ -645,7 +664,7 @@ function renderPay() {
   h += slipPrev
     ? `<img class="prev" src="${slipPrev}" alt="สลิป"><div style="text-align:center;margin-bottom:14px"><button class="link" onclick="$('slipIn').click()">เปลี่ยนรูป</button></div>`
     : `<button class="drop" onclick="$('slipIn').click()"><div class="ic">📎</div><b>แตะเพื่อเลือกรูปสลิป</b><div class="muted">จากคลังรูป หรือถ่ายรูป</div></button>`;
-  h += `<p class="muted" style="text-align:center">ส่งสลิปในแชต LINE ก็ได้เหมือนกัน · <a class="link" onclick="go('pkg')">เปลี่ยนสาย</a></p>`;
+  h += `<p class="muted" style="text-align:center"><a class="link" onclick="go('pkg')">แก้ไขรายการ</a></p>`;
   $('main').innerHTML = h;
   $('barIn').innerHTML = `<div class="sum">ยอดโอน<b>฿${total.toLocaleString()}</b></div>
     <button class="cta" onclick="sendSlip()" ${slipB64 ? '' : 'disabled'}>${slipB64 ? 'ส่งสลิป' : 'แนบสลิปก่อนนะ'}</button>`;
@@ -676,18 +695,29 @@ function gotSlip(inp) {
   img.src = url;
 }
 function sendSlip() {
-  if (!slipB64) return;
+  if (!slipB64 || !payQuote) return;
   run(async () => {
-    const r = await api('slip', { pkgs: payPkgs, image: slipB64 });
+    const r = await api('slip', { codes: payQuote.codes, renew: payQuote.renew, amount: payQuote.amount, image: slipB64 });
     if (r.state) { S = r.state; resetFromState(); }
-    if (!r.ok) { toast(r.error === 'need_consent' ? 'ติ๊กยอมรับนโยบายก่อนนะ' : 'ส่งไม่ได้ ลองใหม่อีกครั้ง'); render(); return; }
+    if (r.error === 'price_changed' && r.quote) {   // ยอดเปลี่ยนระหว่างเปิดหน้า (เช่น แพ็กหมดพอดี) → แสดงยอดใหม่ ให้โอนส่วนต่าง/ทักแอดมิน
+      payQuote = Object.assign({}, payQuote, r.quote, { renew: r.quote.mode === 'renew' });
+      toast('ยอดเปลี่ยนเป็น ฿' + r.quote.amount + ' กรุณาตรวจยอดอีกครั้ง', 5000); render(); return;
+    }
+    if (!r.ok) { toast(r.error === 'need_consent' ? 'ติ๊กยอมรับนโยบายก่อนนะ' : errText(r.error)); render(); return; }
     payResult = r.slip; slipB64 = ''; slipPrev = '';
+    if (r.slip && r.slip.result === 'ok') payQuote = null;
     render(); window.scrollTo(0, 0);
   });
 }
 
-// ===== สถานะของฉัน =====
+// ===== แท็บสถานะ (ดูอย่างเดียว + แก้ "คุณคือ") =====
 const PAY_LABEL = { ok: 'ผ่าน', wait: 'รอตรวจ', reject: 'ไม่ผ่าน' };
+function chipsByLine(codes) {
+  const bl = {};
+  codes.forEach(c => { const l = lineOf(c); (bl[l] = bl[l] || []).push(nameOf(c)); });
+  return Object.keys(S.lines).filter(l => bl[l]).map(l => `<div style="margin-top:8px"><span class="dotc" style="background:${S.lines[l].color}"></span><b>${esc(S.lines[l].name)}</b>
+    <div class="stchips">${bl[l].map(n => `<span class="chip">${esc(n)}</span>`).join('')}</div></div>`).join('');
+}
 function renderStatus() {
   let h = '';
   if (roleEdit) {
@@ -705,21 +735,17 @@ function renderStatus() {
       <button class="link" onclick="roleEdit=true; rolePick=''; renderStatus()">แก้ไข</button></div></div>`;
   }
   const rows = [];
-  if (S.trial) rows.push(`<div><span>ทดลองฟรี · ${esc(S.packages[S.trial.pkg].name)}</span><span>${S.trial.active
+  if (S.trial) rows.push(`<div><span>ทดลองฟรี · ${esc(S.lines[S.trial.line].name)}</span><span>${S.trial.active
       ? `<span class="pill wait">เหลือ ${S.trial.daysLeft} วัน</span>` : '<span class="pill reject">หมดแล้ว</span>'}</span></div>`);
-  Object.keys(S.paid).sort().forEach(k => rows.push(`<div><span>${esc(S.packages[k].name)}</span><span>${S.paid[k].active
-      ? `<span class="pill ok">ถึง ${esc(S.paid[k].until)}</span>` : '<span class="pill reject">หมดอายุ</span>'}</span></div>`));
-  h += `<div class="note"><b>แพ็กของฉัน</b>${rows.length ? `<div class="kv" style="margin-top:6px">${rows.join('')}</div>`
-        : '<div class="muted" style="margin-top:6px">ยังไม่มีแพ็ก</div>'}</div>`;
+  if (S.paid) rows.push(`<div><span>แพ็กเกจ · ${S.owned.length || S.lastStations.length} สถานี</span><span>${S.paid.active
+      ? `<span class="pill ok">ถึง ${esc(S.paid.until)}</span>` : '<span class="pill reject">หมดอายุ</span>'}</span></div>`);
+  h += `<div class="note"><b>แพ็กเกจของฉัน</b>${rows.length ? `<div class="kv" style="margin-top:6px">${rows.join('')}</div>`
+        : '<div class="muted" style="margin-top:6px">ยังไม่มีแพ็กเกจ</div>'}</div>`;
   if (S.active.length) {
-    const act = S.stationList.filter(s => S.stations.includes(s.c) && S.active.includes(s.p));
-    const shown = S.trialCap ? act.filter(s => s.p !== S.trialCap).concat(act.filter(s => s.p === S.trialCap).slice(0, S.trialMax)) : act;
-    h += `<div class="note"><b>สถานีที่รับห้อง (${shown.length})</b>
-          ${shown.length ? `<div class="stchips">${shown.map(s => `<span class="chip">${esc(s.n)}</span>`).join('')}</div>`
-                         : '<div class="muted" style="margin-top:6px">ยังไม่ได้เลือกสถานี</div>'}
+    h += `<div class="note"><b>สถานีที่รับห้อง (${S.active.length})</b>${chipsByLine(S.active)}
           <div class="muted" style="margin-top:10px">⏰ ส่งห้องวันละ 5 รอบ: ${esc(S.sendTimes || '')}</div></div>`;
   } else {
-    h += `<div class="note gift">⏸ ตอนนี้หยุดส่งห้อง — ต่ออายุเพื่อรับห้องต่อ</div>`;
+    h += `<div class="note gift">⏸ ตอนนี้หยุดส่งห้อง — เลือกแพ็กเกจเพื่อรับห้องต่อ</div>`;
   }
   const pays = S.payments || [];
   if (pays.length) {
@@ -728,49 +754,24 @@ function renderStatus() {
   }
   h += `<p class="muted" style="text-align:center">มีคำถาม? ทักแอดมินในแชต LINE ได้เลย</p>`;
   $('main').innerHTML = h;
-  $('barIn').innerHTML = S.active.length
-    ? `<button class="cta" style="background:var(--brand);box-shadow:none" onclick="go('st')">เลือกสถานี</button><button class="cta" onclick="go('pkg')">${isNew() ? 'เริ่มทดลอง' : 'ต่ออายุ'}</button>`
-    : `<button class="cta" onclick="go('pkg')">${isNew() ? 'เริ่มทดลองฟรี' : 'ต่ออายุ'}</button>`;
+  $('barIn').innerHTML = `<button class="cta" onclick="go('pkg')">${isNew() ? 'เริ่มทดลองฟรี' : paidOn() ? 'ต่ออายุ / ซื้อเพิ่ม' : 'เลือกแพ็กเกจ'}</button>`;
 }
 
 function render() {
-  $('tab-pkg').classList.toggle('on', view === 'pkg' || view === 'pay');
-  $('tab-st').classList.toggle('on', view === 'st');
-  $('tab-status').classList.toggle('on', view === 'status');
+  ['pkg', 'pay', 'status'].forEach(v => $('tab-' + v).classList.toggle('on', view === v));
   $('bar').classList.remove('hide');
-  ({ pkg: renderPkg, st: renderSt, status: renderStatus, pay: renderPay })[view]();
+  ({ pkg: renderPkg, pay: renderPay, status: renderStatus })[view]();
 }
 function go(v) { if (v !== 'pay') payResult = null; view = v; render(); window.scrollTo(0, 0); }
 
 function resetFromState() {
-  const act = S.active;
-  picked = new Set(S.stations.filter(c => { const s = S.stationList.find(x => x.c === c); return s && act.includes(s.p); }));
-  if (isNew()) pick = [];
-  else pick = S.cart.length ? S.cart.slice() : Object.keys(S.paid).length ? Object.keys(S.paid).sort() : (S.trial ? [S.trial.pkg] : []);
-  // เปิดที่ระบบที่ใช้อยู่ (ใช้แค่ MRT → เปิดแท็บ MRT) ไม่งั้น BTS
-  const mine = act.length ? act : pick;
-  if (S.packages && mine.length && mine.every(k => S.packages[k] && sysOf(k) === 'MRT')) sys = 'MRT';
+  // ติ๊กเริ่มต้น: ที่จ่ายแล้ว ∪ ตะกร้าค้าง / หมดอายุแล้ว = ชุดเดิม / ทดลองอยู่ = สถานีทดลอง
+  const base = paidOn() ? S.owned : (S.cart && S.cart.length ? S.cart : S.paid ? S.lastStations : S.trial ? S.trial.stations : []);
+  sel = new Set(base.concat(paidOn() && S.cart ? S.cart : []));
+  renewPick = false;
+  const first = want()[0];
+  if (!line || !S.lines[line]) line = first ? lineOf(first) : Object.keys(S.lines)[0];
 }
-
-function togglePkg(k) {
-  if (isNew()) { pick = pick[0] === k ? [] : [k]; trialSt = new Set(); }
-  else pick = pick.includes(k) ? pick.filter(x => x !== k) : [...pick, k].sort();
-  renderPkg();
-}
-function pickAll() { pick = [...new Set([...pick, ...pkgsOf(sys)])].sort(); renderPkg(); }
-function pickEvery() { pick = Object.keys(S.packages).sort(); renderPkg(); }
-function togSt(c) {
-  if (picked.has(c)) picked.delete(c);
-  else {
-    const k = S.stationList.find(s => s.c === c).p;
-    if (S.trialCap === k && stationsOf(k).filter(s => picked.has(s.c)).length >= S.trialMax) {
-      toast(`ช่วงทดลองเลือกได้ ${S.trialMax} สถานี เอาอันเดิมออกก่อนนะ`); return;
-    }
-    picked.add(c);
-  }
-  renderSt();
-}
-function allOf(k, on) { stationsOf(k).forEach(s => on ? picked.add(s.c) : picked.delete(s.c)); renderSt(); }
 
 async function run(fn) {
   if (busy) return; busy = true;
@@ -781,39 +782,23 @@ async function run(fn) {
 
 // เริ่มทดลอง: สรุปให้ตรวจอีกครั้งก่อน (ช่วงทดลองเปลี่ยนสายไม่ได้)
 function startTrial() {
-  const names = S.stationList.filter(s => trialSt.has(s.c)).map(s => esc(s.n)).join(' · ');
+  const w = want();
   askConfirm('ตรวจอีกครั้งก่อนเริ่มทดลอง', `<div class="kv">
       <div><span>คุณคือ</span><span>${esc(curRole())}</span></div>
-      <div><span>สาย</span><span>${esc(S.packages[pick[0]].name)}</span></div>
-      <div><span>สถานี</span><span>${names}</span></div></div>
-    <p class="muted" style="margin-top:12px">⚠️ เริ่มแล้วเปลี่ยนสายไม่ได้ (เปลี่ยนสถานีในสายเดิมได้)</p>`, 'ยืนยัน เริ่มทดลอง', doStartTrial);
+      <div><span>สาย</span><span>${esc(S.lines[lineOf(w[0])].name)}</span></div>
+      <div><span>สถานี</span><span>${w.map(c => esc(nameOf(c))).join(' · ')}</span></div></div>
+    <p class="muted" style="margin-top:12px">⚠️ ทดลองได้ครั้งเดียว เริ่มแล้วเปลี่ยนสาย/สถานีไม่ได้</p>`, 'ยืนยัน เริ่มทดลอง', doStartTrial);
 }
 function doStartTrial() {
   run(async () => {
-    const r = await api('trial', { pkg: pick[0], codes: [...trialSt], role: curRole(), exp: isAgent() ? expPick : '' });
+    const w = want();
+    const r = await api('trial', { line: lineOf(w[0]), codes: w, role: curRole(), exp: isAgent() ? expPick : '' });
     if (r.state) { S = r.state; resetFromState(); }
-    if (!r.ok) { toast(r.error === 'trial_used' ? 'คุณใช้สิทธิ์ทดลองไปแล้ว' : 'ทำรายการไม่ได้ ลองใหม่'); render(); return; }
-    rolePick = ''; trialSt = new Set();
+    if (!r.ok) { toast(errText(r.error)); render(); return; }
+    rolePick = '';
     toast('เริ่มทดลองแล้ว ✅');
     await sayAndClose('เริ่มทดลองแล้ว', 'เริ่มทดลองแล้ว ✅ กลับไปที่แชตได้เลย');
-    go('st');
-  });
-}
-function confirmPay() {
-  run(async () => {
-    const r = await api('cart', { pkgs: pick });
-    if (r.state) S = r.state;
-    if (!r.ok) { toast('ทำรายการไม่ได้ ลองใหม่'); render(); return; }
-    payPkgs = pick.slice(); payResult = null;
-    go('pay');
-  });
-}
-function saveSt() {
-  run(async () => {
-    const r = await api('stations', { codes: [...picked] });
-    if (r.state) { S = r.state; resetFromState(); }
-    toast(r.ok ? 'บันทึกแล้ว ✅ รอบถัดไปได้ห้องตามนี้' : r.error === 'trial_max' ? `ช่วงทดลองเลือกได้ ${S.trialMax} สถานี` : 'บันทึกไม่ได้ ลองใหม่');
-    render();
+    go('status');
   });
 }
 
@@ -822,18 +807,18 @@ function fail(msg) {
   $('bar').classList.add('hide');
 }
 
-// เปิดหน้าเว็บที่แท็บ "เลือกสาย" (เจ้าของสั่ง 24 พ.ย.) ยกเว้นปุ่มเมนู "สถานะของฉัน" (?tab=status) เปิดแท็บสถานะ
+// ?tab=status → สถานะ / ?tab=pay → ชำระเงิน / อื่นๆ (packages, stations) → แพ็กเกจ
 // ตอนเปิดครั้งแรก LINE ห่อพารามิเตอร์ไว้ใน ?liff.state=%3Ftab%3D...
 function wantedTab() {
-  const q = new URLSearchParams(location.search);
-  let t = q.get('tab');
-  if (!t && q.get('liff.state')) { try { t = new URLSearchParams(q.get('liff.state').replace(/^[^?]*\?/, '')).get('tab'); } catch (e) {} }
-  return t === 'status' ? 'status' : 'pkg';
+  const p = new URLSearchParams(location.search);
+  let t = p.get('tab');
+  if (!t && p.get('liff.state')) { try { t = new URLSearchParams(p.get('liff.state').replace(/^[^?]*\?/, '')).get('tab'); } catch (e) {} }
+  return t === 'status' ? 'status' : t === 'pay' ? 'pay' : 'pkg';
 }
 
 (async function start() {
   view = wantedTab();
-  $('tab-pkg').classList.toggle('on', view === 'pkg'); $('tab-status').classList.toggle('on', view === 'status');
+  ['pkg', 'pay', 'status'].forEach(v => $('tab-' + v).classList.toggle('on', view === v));
   try {
     await liff.init({ liffId: CONFIG.LIFF_ID });
     view = wantedTab();   // หลัง init LINE เปลี่ยน URL กลับเป็น ?tab=... แล้ว
@@ -842,6 +827,10 @@ function wantedTab() {
     if (!r.ok) return fail(r.error === 'auth' ? 'ยืนยันตัวตนไม่ได้<br><span class="muted">กรุณาเปิดจากเมนูในแชต LINE พรายกระซิบ</span>' : 'โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง');
     S = r.state; resetFromState();
     if (S.name) $('hello').textContent = 'สวัสดีคุณ ' + S.name;
+    if (view === 'pay' && S.cart && S.cart.length) {   // เปิดจากเมนู "จ่ายค่าบริการ" และมีตะกร้าค้าง → คิดราคาให้เลย
+      const c = await api('cart', { codes: S.cart, renew: !!S.cartRenew });
+      if (c.ok) payQuote = Object.assign({ codes: S.cart.slice(), renew: c.quote.mode === 'renew' }, c.quote);
+    }
     render();
   } catch (e) {
     console.error(e);
