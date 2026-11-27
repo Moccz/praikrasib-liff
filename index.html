@@ -584,7 +584,7 @@ function renderBar() {
   }
   const lq = localQuote(owned(), w, renewPick);
   const label = !lq.ok ? errText(lq.error) : !canSave() ? 'ติ๊ก "ตกลง" ด้านล่างก่อนนะ'
-    : lq.mode === 'free' ? 'บันทึก (ไม่มีค่าใช้จ่าย)' : 'ไปชำระเงิน';
+    : lq.mode === 'free' ? 'บันทึก (ไม่มีค่าใช้จ่าย)' : 'ชำระเงิน';
   $('barIn').innerHTML = `<div class="sum">${lq.ok ? (lq.mode === 'add' ? 'ซื้อเพิ่ม' : lq.mode === 'renew' ? 'ต่ออายุ' : lq.mode === 'free' ? 'เพิ่มฟรี' : 'ยอดรวม') : 'ยอดรวม'}<b>฿${(lq.ok ? lq.amount : 0).toLocaleString()}</b></div>
     <button class="cta" onclick="${lq.ok && lq.mode === 'free' ? 'saveFree()' : 'toPay()'}" ${lq.ok && canSave() ? '' : 'disabled'}>${label}</button>`;
 }
